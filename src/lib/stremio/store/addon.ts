@@ -6,23 +6,29 @@ const ctxStore = createModelStore<Ctx>('ctx');
 const stremio = getStremio();
 
 export const addon = {
-    subscribe: derived(ctxStore, ($ctx) => ({
-        addons: $ctx?.profile?.addons,
-    })).subscribe,
+	subscribe: derived(ctxStore, ($ctx) => ({
+		addons: $ctx?.profile?.addons
+	})).subscribe,
 
-    //TODO manifest is no string error
-    install: (manifest: string) => {
-        console.log('Installing addon with manifest:', new URL(manifest).toString());
-        stremio.dispatch({
-            action: 'Ctx',
-            args: { action: 'InstallAddon', args: { manifest } }
-        });
-    },
-    //TODO manifest is no string error
-    uninstall: (manifest: string) => {
-        stremio.dispatch({
-            action: 'Ctx',
-            args: { action: 'UninstallAddon', args: { manifest } }
-        });
-    }
+	install: async (url: string) => {
+		const manifest = await getManifestFromUrl(url);
+		stremio.dispatch({
+			action: 'Ctx',
+			args: { action: 'InstallAddon', args: { transportUrl: url, manifest } }
+		});
+	},
+	uninstall: (addon: Addon) => {
+		stremio.dispatch({
+			action: 'Ctx',
+			args: { action: 'UninstallAddon', args: { ...addon } }
+		});
+	}
 };
+
+async function getManifestFromUrl(url: string) {
+	const response = await fetch(url);
+	if (!response.ok) {
+		throw new Error(`Failed to fetch manifest from ${url}: ${response.statusText}`);
+	}
+	return await response.json();
+}
