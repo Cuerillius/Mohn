@@ -1,5 +1,4 @@
-interface Addon {
-	manifest: {
+interface Manifest {
 		id: string;
 		version: string;
 		name: string;
@@ -30,10 +29,4 @@ interface Addon {
 			configurable: boolean;
 			configurationRequired: boolean;
 		};
-	};
-	transportUrl: string;
-	flags: {
-		official: boolean;
-		protected: boolean;
-	};
-}
+	}
