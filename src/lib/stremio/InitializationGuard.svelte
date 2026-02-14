@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import { getStremio } from '$lib/stremio/core';
 
+	let { children } = $props();
+
 	let initialized = $state(false);
 
 	const loadingMessages = [
@@ -71,7 +73,7 @@
 </script>
 
 {#if initialized}
-	<slot />
+	{@render children()}
 {:else}
 	<div class="flex h-screen w-screen flex-col content-center items-center justify-center gap-4 p-8">
 		<h1 class="text-xl font-bold">Starting Stremio Engine</h1>

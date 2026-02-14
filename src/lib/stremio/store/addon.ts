@@ -22,6 +22,9 @@ export const addon = {
 			action: 'Ctx',
 			args: { action: 'UninstallAddon', args: { ...addon } }
 		});
+	},
+	configure: (addon: Addon) => {
+		window.open(addon.transportUrl.replace('manifest.json', 'configure'), '_blank');
 	}
 };
 

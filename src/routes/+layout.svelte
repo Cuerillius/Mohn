@@ -20,14 +20,15 @@
 
 			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50" href="/"><House /> Home</a
 			>
-			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50" href="/search"
-				><Search /> Search</a
-			>
 
 			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50" href="/addons"
 				><Package />Addons</a
 			>
 			<div class="flex-1"></div>
+
+			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50" href="/search"
+				><Search /> Search</a
+			>
 
 			<a
 				class="flex items-center gap-2 rounded-full border border-border bg-muted/70 p-2 hover:bg-muted/50"
