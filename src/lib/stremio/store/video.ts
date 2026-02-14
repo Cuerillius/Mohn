@@ -1,4 +1,6 @@
+import { get } from 'svelte/store';
 import { getVideo } from '../video';
+import { streamingServer } from './streamingServer';
 
 const videoCore = await getVideo();
 
@@ -10,6 +12,8 @@ export const video = {
 	},
 
 	loadStream: (stream: Stream) => {
+		const currentStreamingServer = get(streamingServer);
+
 		videoCore.dispatch(
 			{
 				type: 'command',
@@ -18,7 +22,8 @@ export const video = {
 					stream,
 					autoplay: true,
 					time: 0,
-					forceTranscoding: true
+					forceTranscoding: true,
+					streamingServerURL: currentStreamingServer?.url
 				}
 			},
 			{ containerElement: videoContainer }

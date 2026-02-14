@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { board } from '$lib/stremio/store/board';
 	import { onMount, onDestroy } from 'svelte';
-
 	import Catalog from '$lib/components/catalog.svelte';
-	import * as Carousel from '$lib/components/ui/carousel/index.js';
-	import Image from '$lib/components/image.svelte';
+	import HeroCaroussel from '$lib/components/heroCaroussel.svelte';
+	import HeroCarousselSkeleton from '$lib/components/skeletons/heroCaroussel.svelte';
+
 	let sentinel: HTMLElement;
 	let observer: IntersectionObserver;
 
@@ -39,14 +39,22 @@
 	onDestroy(() => {
 		if (observer) observer.disconnect();
 	});
+
+	let heroIndex = $derived($board.catalogs?.findIndex((c) => c.content?.type === 'Ready') ?? -1);
 </script>
 
-<div class="flex flex-col gap-8">
-	{#if $board.catalogs?.[0]?.content?.type === 'Err'}
-		<p class="px-20 text-red-500">Failed to load the first catalog.</p>
+<div class="relative flex flex-col gap-8">
+	{#if heroIndex !== -1 && $board.catalogs?.[heroIndex]}
+		<HeroCaroussel catalog={$board.catalogs[heroIndex]} />
+	{:else}
+		<HeroCarousselSkeleton />
 	{/if}
-	{#each $board.catalogs?.splice(1) as catalog}
-		<Catalog {catalog} />
+
+	{#each $board.catalogs as catalog, i}
+		{#if i !== heroIndex}
+			<Catalog {catalog} />
+		{/if}
 	{/each}
-	<div bind:this={sentinel}></div>
+
+	<div bind:this={sentinel} class="h-4"></div>
 </div>

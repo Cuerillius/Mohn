@@ -36,7 +36,7 @@
 				{#if link.category === 'Genres'}
 					<Badge variant="outline">{link.name}</Badge>
 				{:else if link.category === 'imdb'}
-					<Badge variant="outline"><Star />{link.name}</Badge>
+					<Badge variant="outline"><Star color="yellow" fill="currentColor" />{link.name}</Badge>
 				{/if}
 			{/each}
 		</div>

@@ -1,6 +1,7 @@
 import { createModelStore } from './modelStore';
-import { derived, writable, type Writable } from 'svelte/store';
+import { derived, get, writable, type Writable } from 'svelte/store';
 import { getStremio } from '../core';
+import { streamingServer } from './streamingServer';
 
 const playerStore = createModelStore<any>('player');
 const stremio = getStremio();
@@ -11,6 +12,7 @@ export const player = {
 	subscribe: derived(playerStore, ($player) => $player).subscribe,
 
 	loadStream: (stream: Stream) => {
+		const currentStreamingServer = get(streamingServer);
 		stremio.dispatch({
 			action: 'Load',
 			args: {
@@ -19,7 +21,8 @@ export const player = {
 					stream,
 					autoplay: true,
 					time: 0,
-					forceTranscoding: true
+					forceTranscoding: true,
+					streamingServerURL: currentStreamingServer?.url
 				}
 			}
 		});

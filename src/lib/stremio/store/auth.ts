@@ -7,6 +7,7 @@ const stremio = getStremio();
 
 export const auth = {
 	subscribe: derived(ctxStore, ($ctx) => ({
+		profile: $ctx?.profile,
 		email: $ctx?.profile?.auth?.user?.email,
 		isLoggedIn: !!$ctx?.profile?.auth?.key
 	})).subscribe,

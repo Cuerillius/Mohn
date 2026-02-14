@@ -2,7 +2,8 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import InitializationGuard from '$lib/stremio/InitializationGuard.svelte';
-	import { House, IdCard, Package, Search } from 'lucide-svelte';
+	import { House, IdCard, Package, Search, User } from 'lucide-svelte';
+	import Logo from '$lib/assets/logo.svelte';
 
 	let { children } = $props();
 </script>
@@ -11,20 +12,29 @@
 <InitializationGuard>
 	<div class="min-h-screen bg-background text-white">
 		<nav
-			class="sticky top-4 z-1000 mx-12 flex items-center gap-4 rounded-xl border border-border p-2 backdrop-blur-md"
+			class="fixed inset-x-12 top-4 z-1000 flex items-center gap-4 rounded-xl border border-border px-4 py-2 backdrop-blur-xl"
 		>
-			<a class="text-2xl font-bold" href="/">JLK</a>
-			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted" href="/"><House /> Home</a>
-			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted" href="/search"
+			<a href="/">
+				<Logo class="h-14 w-14" />
+			</a>
+
+			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50" href="/"><House /> Home</a
+			>
+			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50" href="/search"
 				><Search /> Search</a
 			>
-			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted" href="/auth"
-				><IdCard />Auth</a
-			>
-			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted" href="/addons"
+
+			<a class="flex items-center gap-2 rounded-md p-2 hover:bg-muted/50" href="/addons"
 				><Package />Addons</a
 			>
+			<div class="flex-1"></div>
+
+			<a
+				class="flex items-center gap-2 rounded-full border border-border bg-muted/70 p-2 hover:bg-muted/50"
+				href="/auth"><User /></a
+			>
 		</nav>
+
 		{@render children()}
 	</div>
 </InitializationGuard>

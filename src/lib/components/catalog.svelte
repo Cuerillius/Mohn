@@ -2,9 +2,8 @@
 	import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import DisplayItem from '$lib/components/displayItem.svelte';
+	import CatalogSkeleton from '$lib/components/skeletons/catalog.svelte';
+	import CatalogItem from '$lib/components/catalogItem.svelte';
 
 	let { catalog }: { catalog: Catalog } = $props();
 
@@ -24,30 +23,7 @@
 
 {#if catalog?.content}
 	{#if catalog.content.type === 'Loading'}
-		<div class="flex flex-col px-20">
-			<div class="flex items-center gap-4">
-				<Skeleton class="h-8 w-48" />
-				<div class="flex gap-2">
-					<Skeleton class="h-6 w-16 rounded-full" />
-					<Skeleton class="h-6 w-24 rounded-full" />
-				</div>
-			</div>
-			<Skeleton class="mt-2 h-4 w-20" />
-
-			<div class="flex w-full gap-8 overflow-hidden pt-6">
-				{#each { length: 10 } as _}
-					<div class="flex w-48 shrink-0 flex-col gap-2">
-						<Skeleton class="aspect-2/3 w-full rounded-lg" />
-
-						<Skeleton class="h-4 w-3/4" />
-						<div class="flex items-center gap-2">
-							<Skeleton class="h-3 w-1/4" />
-							<Skeleton class="h-3 w-1/3" />
-						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
+		<CatalogSkeleton />
 	{:else if catalog.content.type === 'Ready'}
 		<div>
 			<div class="px-20">
@@ -68,7 +44,7 @@
 			<div class="group/carousel relative">
 				<button
 					onclick={(e) => scrollCarousel(e, 'left')}
-					class=" absolute top-1/2 left-0 z-60 h-full w-20 -translate-y-1/2 bg-linear-to-r from-background via-background to-transparent"
+					class=" absolute top-1/2 left-0 z-60 h-3/4 w-20 -translate-y-1/2 bg-linear-to-r from-background via-background to-transparent"
 				>
 					<Button
 						variant="secondary"
@@ -84,7 +60,7 @@
 					class="carousel-container scrollbar-hide -my-32 flex w-full gap-8 overflow-x-auto scroll-smooth px-20 py-32"
 				>
 					{#each catalog.content.content as entry}
-						<DisplayItem {entry} />
+						<CatalogItem {entry} />
 					{/each}
 					<div class="relative w-48 shrink-0">
 						<a href="/">
@@ -100,7 +76,7 @@
 
 				<button
 					onclick={(e) => scrollCarousel(e, 'right')}
-					class=" absolute top-1/2 right-0 z-60 h-full w-20 -translate-y-1/2 bg-linear-to-l from-background via-background to-transparent"
+					class=" absolute top-1/2 right-0 z-60 h-3/4 w-20 -translate-y-1/2 bg-linear-to-l from-background via-background to-transparent"
 				>
 					<Button
 						variant="secondary"

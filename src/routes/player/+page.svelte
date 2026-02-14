@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import { stream, player } from '$lib/stremio/store/player';
 	import { video } from '$lib/stremio/store/video';
+	import { streamingServer } from '$lib/stremio/store/streamingServer';
+	import { streamingServerUrls } from '$lib/stremio/store/streamingServerUrls';
 	let container: HTMLDivElement;
 	onMount(() => {
 		video.init(container);
@@ -9,6 +11,14 @@
 
 	player.subscribe((value) => {
 		console.log('player store updated:', value);
+	});
+
+	streamingServer.subscribe((value) => {
+		console.log('streamingServer store updated:', value);
+	});
+
+	streamingServerUrls.subscribe((value) => {
+		console.log('streamingServerUrls store updated:', value);
 	});
 </script>
 
@@ -79,5 +89,14 @@
 
 		<button onclick={() => video.muted(false)}> unmute</button>
 		<button onclick={() => video.muted(true)}> mute</button>
+		<button
+			onclick={() => {
+				streamingServerUrls.addServerUrl('http://127.0.0.1:11470');
+				streamingServerUrls.selectServerUrl('http://127.0.0.1:11470');
+				streamingServerUrls.reloadServer();
+			}}
+		>
+			streaming server</button
+		>
 	</div>
 </div>
