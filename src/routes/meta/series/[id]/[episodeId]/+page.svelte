@@ -1,16 +1,24 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { meta } from '$lib/stremio/store/meta';
+	import { stream } from '$lib/stremio/store/player';
+	import { onMount } from 'svelte';
 
-	let metaId = $state('');
+	const { data } = $props();
 	meta.subscribe((value) => {
 		console.log('Meta store updated:', value);
+	});
+	function selectStream(selectedStream: Stream) {
+		stream.set(selectedStream);
+		goto('/player');
+	}
+
+	onMount(() => {
+		meta.loadStream(data.id, 'series');
 	});
 </script>
 
 <div class="flex flex-col gap-4 border p-4">
-	<input class="border px-1" type="text" placeholder="ID" bind:value={metaId} />
-	<button class="border px-1" onclick={() => meta.loadMeta(metaId)}>Fetch Meta</button>
-	<button class="border px-1" onclick={() => meta.loadMeta('tt0133093')}>Demo Fetch Meta</button>
 	{#if $meta?.details}
 		<div class="border p-4">
 			{#if $meta.details.content.type === 'Err'}
@@ -39,6 +47,7 @@
 							<div class="border p-4">
 								<p>{metaItemItem.name}</p>
 								<p>{metaItemItem.description}</p>
+								<button onclick={() => selectStream(metaItemItem)}>Select</button>
 							</div>
 						{/each}
 					{/if}
