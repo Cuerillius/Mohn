@@ -7,10 +7,11 @@ const stremio = getStremio();
 
 export const meta = {
 	subscribe: derived(metaStore, ($meta) => ({
+		meta: $meta,
 		streams: $meta?.streams,
-		details: $meta?.metaItem,
+		details: $meta?.metaItem
 	})).subscribe,
-	loadMeta: (id: string) => {
+	loadMeta: (id: string, type: string) => {
 		stremio.dispatch({
 			action: 'Load',
 			args: {
@@ -18,13 +19,29 @@ export const meta = {
 				args: {
 					metaPath: {
 						resource: 'meta',
-						type: 'movie',
+						type: type,
+						id: id,
+						extra: []
+					}
+				}
+			}
+		});
+	},
+	loadStream: (id: string, type: string) => {
+		stremio.dispatch({
+			action: 'Load',
+			args: {
+				model: 'MetaDetails',
+				args: {
+					metaPath: {
+						resource: 'meta',
+						type: type,
 						id: id,
 						extra: []
 					},
 					streamPath: {
 						resource: 'stream',
-						type: 'movie',
+						type: type,
 						id: id,
 						extra: []
 					}

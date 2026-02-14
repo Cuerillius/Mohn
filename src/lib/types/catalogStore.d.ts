@@ -1,4 +1,4 @@
-import type { DiscoverItem } from "./discoverItem";
+import type { DiscoverItem } from './discoverItem';
 
 interface CatalogStore {
 	selected: any | null;
@@ -14,5 +14,5 @@ interface CatalogStore {
 		extra: any[];
 		nextPage: boolean;
 	};
-	catalog: {content: State<DiscoverItem[]>};
+	catalog: { content: Loadable<DiscoverItem[]> };
 }
