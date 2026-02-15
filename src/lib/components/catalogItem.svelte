@@ -5,6 +5,15 @@
 	import Image from '$lib/components/image.svelte';
 
 	let { entry }: { entry: DiscoverItem } = $props();
+
+	let type = $derived(entry.type.charAt(0).toLocaleUpperCase() + entry.type.slice(1));
+	let releaseInfo = $derived(
+		entry.releaseInfo
+			?.replace(/([-–—])\s*(\d*)/g, (match, dash, nextDigits) => {
+				return nextDigits ? ` - ${nextDigits}` : ' - Today';
+			})
+			.trim()
+	);
 </script>
 
 <div class="group relative shrink-0">
@@ -31,12 +40,15 @@
 				class="absolute bottom-0 h-3/4 w-full bg-linear-to-t from-background to-transparent"
 			></div>
 		</div>
-		<div class="flex gap-2 pl-4">
+		<div class="flex flex-wrap gap-2 px-4">
 			{#each entry.links as link}
 				{#if link.category === 'Genres'}
 					<Badge variant="outline">{link.name}</Badge>
 				{:else if link.category === 'imdb'}
-					<Badge variant="outline"><Star color="yellow" fill="currentColor" />{link.name}</Badge>
+					<Badge variant="outline" class="flex items-center gap-1">
+						<Star class="h-3 w-3" color="yellow" fill="currentColor" />
+						{link.name}
+					</Badge>
 				{/if}
 			{/each}
 		</div>
@@ -44,9 +56,22 @@
 			{entry.description}
 		</p>
 		<div class="flex-1"></div>
-		<div class="flex gap-2 p-4">
+		<div class="flex gap-2 p-4 pt-3">
 			<Button>Details</Button>
 			<Button variant="outline" size="icon"><Bookmark /></Button>
+			<div class="flex w-full flex-col items-center justify-center text-sm text-gray-500">
+				<div class="flex">
+					<p>
+						{type}
+					</p>
+					{#if entry.releaseInfo}
+						<Dot class="h-6 w-6" />
+					{/if}
+					<p>
+						{releaseInfo}
+					</p>
+				</div>
+			</div>
 		</div>
 	</a>
 	<div class="relative w-48 shrink-0">
@@ -66,17 +91,13 @@
 			<div class="flex justify-between text-sm text-gray-500">
 				<div class="flex">
 					<p>
-						{entry.type.charAt(0).toLocaleUpperCase() + entry.type.slice(1)}
+						{type}
 					</p>
 					{#if entry.releaseInfo}
 						<Dot class="h-6 w-6" />
 					{/if}
 					<p>
-						{entry.releaseInfo
-							?.replace(/([-–—])\s*(\d*)/g, (match, dash, nextDigits) => {
-								return nextDigits ? ` - ${nextDigits}` : ' - Today';
-							})
-							.trim()}
+						{releaseInfo}
 					</p>
 				</div>
 			</div>

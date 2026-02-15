@@ -9,7 +9,8 @@ export const auth = {
 	subscribe: derived(ctxStore, ($ctx) => ({
 		profile: $ctx?.profile,
 		email: $ctx?.profile?.auth?.user?.email,
-		isLoggedIn: !!$ctx?.profile?.auth?.key
+		isLoggedIn: !!$ctx?.profile?.auth?.key,
+		searchHistory: $ctx?.searchHistory
 	})).subscribe,
 
 	login: (email: string, password: string) => {

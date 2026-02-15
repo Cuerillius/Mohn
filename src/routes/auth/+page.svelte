@@ -8,7 +8,7 @@
 	});
 </script>
 
-<div class="flex flex-col gap-4 border p-4">
+<div class="flex flex-col gap-4 border px-20 py-32">
 	<div class="flex flex-col border p-4">
 		<p>IsLoggedIn: {$auth.isLoggedIn}</p>
 		<p>User: {$auth.email}</p>

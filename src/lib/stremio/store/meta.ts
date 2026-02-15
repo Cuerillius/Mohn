@@ -8,7 +8,7 @@ const stremio = getStremio();
 export const meta = {
 	subscribe: derived(metaStore, ($meta) => ({
 		meta: $meta,
-		streams: $meta?.streams,
+		streams: $meta?.streams || [],
 		details: $meta?.metaItem
 	})).subscribe,
 	loadMeta: (id: string, type: string) => {

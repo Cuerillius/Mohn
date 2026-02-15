@@ -62,16 +62,18 @@
 					{#each catalog.content.content as entry}
 						<CatalogItem {entry} />
 					{/each}
-					<div class="relative w-48 shrink-0">
-						<a href="/">
-							<div
-								class="mt-2 flex aspect-2/3 w-full flex-col items-center justify-center rounded-lg border border-muted"
-							>
-								<ArrowRight class="h-8 w-8 text-gray-500" />
-								<p class="text-gray-500">View more</p>
-							</div>
-						</a>
-					</div>
+					{#if catalog.content.content.length === 10}
+						<div class="relative w-48 shrink-0">
+							<a href="/">
+								<div
+									class="mt-2 flex aspect-2/3 w-full flex-col items-center justify-center rounded-lg border border-muted"
+								>
+									<ArrowRight class="h-8 w-8 text-gray-500" />
+									<p class="text-gray-500">View more</p>
+								</div>
+							</a>
+						</div>
+					{/if}
 				</div>
 
 				<button
