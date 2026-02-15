@@ -46,5 +46,11 @@ export const player = {
 				args: { videoParams }
 			}
 		});
+	},
+	unload: () => {
+		streamingServer.unload();
+		stremio.dispatch({
+			action: 'Unload'
+		});
 	}
 };

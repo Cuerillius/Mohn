@@ -5,11 +5,12 @@
 	import { BadgeCheck, CornerDownLeft, Settings, Trash } from 'lucide-svelte';
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { Badge } from '$lib/components/ui/badge';
+	import { onDestroy } from 'svelte';
 
 	let addonValue = $state({ manifest: '' });
 
-	addon.subscribe((value) => {
-		console.log('Addon Store Updated:', value);
+	onDestroy(() => {
+		addon.unload();
 	});
 </script>
 

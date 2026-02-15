@@ -42,6 +42,12 @@ export const video = {
 	},
 	muted: (isMuted: boolean) => {
 		setProp('muted', isMuted);
+	},
+	unload: () => {
+		streamingServer.unload();
+		videoCore.dispatch({
+			action: 'unload'
+		});
 	}
 };
 

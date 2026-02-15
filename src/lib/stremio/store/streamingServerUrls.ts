@@ -53,5 +53,11 @@ export const streamingServerUrls = {
 				action: 'Reload'
 			}
 		});
+	},
+	unload: () => {
+		auth.unload();
+		stremio.dispatch({
+			action: 'Unload'
+		});
 	}
 };

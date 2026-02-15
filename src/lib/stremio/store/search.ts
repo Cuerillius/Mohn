@@ -31,5 +31,10 @@ export const search = {
 				}
 			}
 		});
+	},
+	unload: () => {
+		stremio.dispatch({
+			action: 'Unload'
+		});
 	}
 };

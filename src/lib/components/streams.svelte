@@ -6,6 +6,7 @@
 	import { Dot, HardDrive, Info, Layers, OctagonAlert, Play } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import Skeleton from '$lib/components/ui/skeleton/skeleton.svelte';
+	import { onDestroy } from 'svelte';
 
 	let {
 		streams
@@ -45,6 +46,10 @@
 			episode: episodeMatch ? parseInt(episodeMatch[1], 10) : null
 		};
 	}
+
+	onDestroy(() => {
+		meta.unload();
+	});
 </script>
 
 <div

@@ -25,6 +25,11 @@ export const addon = {
 	},
 	configure: (addon: Addon) => {
 		window.open(addon.transportUrl.replace('manifest.json', 'configure'), '_blank');
+	},
+	unload: () => {
+		stremio.dispatch({
+			action: 'Unload'
+		});
 	}
 };
 

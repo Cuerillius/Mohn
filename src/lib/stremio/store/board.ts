@@ -30,5 +30,10 @@ export const board = {
 				args: { start, end }
 			}
 		});
+	},
+	unload: () => {
+		stremio.dispatch({
+			action: 'Unload'
+		});
 	}
 };

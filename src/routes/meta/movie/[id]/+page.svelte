@@ -2,7 +2,7 @@
 	import Image from '$lib/components/image.svelte';
 	import { meta } from '$lib/stremio/store/meta';
 	import { Bookmark, Pause, Play } from 'lucide-svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import Streams from '$lib/components/streams.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ImageVignete from '$lib/components/imageVignete.svelte';
@@ -13,13 +13,10 @@
 
 	const { data } = $props();
 
-	meta.subscribe((value) => {
-		console.log('Meta store updated:', value);
-	});
-
 	onMount(() => {
 		meta.loadStream(data.id, data.id, 'movie');
 	});
+
 	let iframeElement = $state<HTMLIFrameElement | undefined>();
 	let isImmersiveMode = $state(false);
 	let initialClicked = $state(false);
@@ -45,6 +42,10 @@
 		}
 		isPlaying = !isPlaying;
 	}
+
+	onDestroy(() => {
+		meta.unload();
+	});
 </script>
 
 <div class="flex flex-col gap-4">
@@ -85,9 +86,9 @@
 							allowfullscreen
 						></iframe>
 						{#if !isImmersiveMode}
-							<div class="absolute bottom-0 z-40 h-40 w-full bg-background"></div>
+							<div class="absolute bottom-0 z-20 h-40 w-full bg-background"></div>
 							<div
-								class="absolute bottom-40 z-40 h-30 w-full bg-linear-to-t from-background via-background/40 to-transparent"
+								class="absolute bottom-40 z-20 h-30 w-full bg-linear-to-t from-background via-background/40 to-transparent"
 							></div>
 						{/if}
 					{:else}

@@ -1,24 +1,21 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { stream, player } from '$lib/stremio/store/player';
 	import { video } from '$lib/stremio/store/video';
 	import { streamingServer } from '$lib/stremio/store/streamingServer';
 	import { streamingServerUrls } from '$lib/stremio/store/streamingServerUrls';
+
 	let container: HTMLDivElement;
+
 	onMount(() => {
 		video.init(container);
 	});
 
-	player.subscribe((value) => {
-		console.log('player store updated:', value);
-	});
-
-	streamingServer.subscribe((value) => {
-		console.log('streamingServer store updated:', value);
-	});
-
-	streamingServerUrls.subscribe((value) => {
-		console.log('streamingServerUrls store updated:', value);
+	onDestroy(() => {
+		video.unload();
+		player.unload();
+		streamingServer.unload();
+		streamingServerUrls.unload();
 	});
 </script>
 

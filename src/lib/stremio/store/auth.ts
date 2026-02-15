@@ -30,5 +30,10 @@ export const auth = {
 			action: 'Ctx',
 			args: { action: 'Logout' }
 		});
+	},
+	unload: () => {
+		stremio.dispatch({
+			action: 'Unload'
+		});
 	}
 };

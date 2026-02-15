@@ -2,7 +2,7 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import InitializationGuard from '$lib/stremio/InitializationGuard.svelte';
-	import { House, IdCard, Package, Search, User } from 'lucide-svelte';
+	import { House, Package, User } from 'lucide-svelte';
 	import Logo from '$lib/assets/logo.svelte';
 	import SearchComponent from '$lib/components/search.svelte';
 

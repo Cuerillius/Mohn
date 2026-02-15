@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { auth } from '$lib/stremio/store/auth';
+	import { onDestroy } from 'svelte';
 
 	let authValue = $state({ email: '', password: '' });
 
-	auth.subscribe((value) => {
-		console.log('Auth store updated:', value);
+	onDestroy(() => {
+		auth.unload();
 	});
 </script>
 

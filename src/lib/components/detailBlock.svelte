@@ -20,7 +20,7 @@
 			<Badge variant="outline" class=" backdrop-blur-lg"><BadgeCheck class="h-4" />Watched</Badge>
 		{/if}
 	</div>
-	<Image src={item.logo} alt={item.name} class=" w-min-20 h-48 rounded-xl" />
+	<Image src={item.logo} alt={item.name} class=" w-min-20 h-48" />
 	<div class="mt-1 flex gap-2">
 		{#each item.links as link}
 			{#if link.category === 'Genres'}

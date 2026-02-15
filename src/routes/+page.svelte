@@ -38,8 +38,8 @@
 
 	onDestroy(() => {
 		if (observer) observer.disconnect();
+		board.unload();
 	});
-
 	let heroIndex = $derived($board.catalogs?.findIndex((c) => c.content?.type === 'Ready') ?? -1);
 </script>
 

@@ -48,5 +48,10 @@ export const meta = {
 				}
 			}
 		});
+	},
+	unload: () => {
+		stremio.dispatch({
+			action: 'Unload'
+		});
 	}
 };
