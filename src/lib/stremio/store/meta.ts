@@ -27,7 +27,7 @@ export const meta = {
 			}
 		});
 	},
-	loadStream: (id: string, type: string) => {
+	loadStream: (metaId: string, streamId: string, type: string) => {
 		stremio.dispatch({
 			action: 'Load',
 			args: {
@@ -36,13 +36,13 @@ export const meta = {
 					metaPath: {
 						resource: 'meta',
 						type: type,
-						id: id,
+						id: metaId,
 						extra: []
 					},
 					streamPath: {
 						resource: 'stream',
 						type: type,
-						id: id,
+						id: streamId,
 						extra: []
 					}
 				}

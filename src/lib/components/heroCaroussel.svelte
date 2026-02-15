@@ -1,14 +1,10 @@
 <script lang="ts">
-	import { board } from '$lib/stremio/store/board';
 	import Autoplay from 'embla-carousel-autoplay';
-
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
-	import Image from '$lib/components/image.svelte';
 	import type { CarouselAPI } from '$lib/components/ui/carousel/context';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { ArrowLeft, ArrowRight, BadgeCheck, Dot, Info, Play, Star } from 'lucide-svelte';
-	import Badge from '$lib/components/ui/badge/badge.svelte';
-	import { goto } from '$app/navigation';
+	import HeroDetail from './heroDetail.svelte';
 
 	let { catalog }: { catalog: Catalog } = $props();
 
@@ -43,87 +39,8 @@
 			{#if catalog.content?.type === 'Ready'}
 				{#each catalog.content.content as item}
 					<Carousel.Item>
-						<div class="relative h-screen w-full overflow-hidden">
-							<Image src={item.background} alt={item.name} class="h-full w-full object-cover" />
-
-							<div
-								class="absolute inset-x-0 top-0 z-10 h-60 bg-linear-to-b from-background/50 via-background/20 to-transparent"
-							></div>
-							<div
-								class="absolute inset-y-0 left-0 z-10 w-48 bg-linear-to-r from-background to-transparent opacity-80"
-							></div>
-							<div
-								class="absolute inset-y-0 right-0 z-10 w-48 bg-linear-to-l from-background to-transparent opacity-80"
-							></div>
-
-							<div
-								class="absolute inset-0 z-20 bg-[radial-gradient(ellipse_at_bottom,transparent_20%,hsl(var(--background))_100%)] opacity-90"
-							></div>
-
-							<div
-								class="absolute inset-x-0 bottom-0 z-30 h-1/2 bg-linear-to-t from-background via-background/40 to-transparent"
-							></div>
-							<div
-								class="absolute right-0 bottom-0 left-0 h-2/4 bg-linear-to-t from-background to-transparent"
-							></div>
-							<div class="absolute bottom-1/6 left-20 z-40 max-w-2xl">
-								<div class="mb-2 flex gap-4">
-									<Badge variant="default" class="text-sm font-medium">
-										{catalog.addon.manifest.name}
-									</Badge>
-									<Badge variant="outline" class=" text-sm font-medium backdrop-blur-lg">
-										{catalog.name}
-									</Badge>
-									{#if item.watched}
-										<Badge variant="outline" class=" backdrop-blur-lg"
-											><BadgeCheck class="h-4" />Watched</Badge
-										>
-									{/if}
-								</div>
-								<Image src={item.logo} alt={item.name} class=" w-min-20 h-48 rounded-xl" />
-								<div class="mt-1 flex gap-2">
-									{#each item.links as link}
-										{#if link.category === 'Genres'}
-											<Badge variant="outline" class="px-4 py-2 backdrop-blur-lg">{link.name}</Badge
-											>
-										{:else if link.category === 'imdb'}
-											<Badge variant="outline" class="px-4 py-2  backdrop-blur-lg"
-												><Star color="yellow" fill="currentColor" />{link.name}</Badge
-											>
-										{/if}
-									{/each}
-								</div>
-								<div class="my-4 flex w-full flex-col text-gray-300">
-									<div class="flex">
-										<p>
-											{item.runtime}
-										</p>
-										{#if item.releaseInfo}
-											<Dot class="h-6 w-6" />
-										{/if}
-										<p>
-											{item.releaseInfo
-												?.replace(/([-–—])\s*(\d*)/g, (match, dash, nextDigits) => {
-													return nextDigits ? ` - ${nextDigits}` : ' - Today';
-												})
-												.trim()}
-										</p>
-									</div>
-								</div>
-								<p class="mb-6 w-120 text-gray-300">{item.description}</p>
-								<div class="flex gap-6">
-									<Button class="p-6" onclick={() => goto(`/meta/${item.type}/${item.id}`)}
-										><Play />Watch Now</Button
-									>
-									<Button
-										variant="outline"
-										class="p-6"
-										onclick={() => goto(`/meta/${item.type}/${item.id}`)}><Info />More Info</Button
-									>
-								</div>
-							</div>
-						</div></Carousel.Item
-					>
+						<HeroDetail {item} {catalog} />
+					</Carousel.Item>
 				{/each}
 			{/if}
 		</Carousel.Content>

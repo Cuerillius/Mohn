@@ -23,6 +23,7 @@ interface DiscoverItem {
 			externalPlayer: ExternalPlayerUrls;
 		};
 	}>;
+	videos: Array<Episode>;
 	behaviorHints: {
 		defaultVideoId: string;
 		featuredVideoId: string | null;

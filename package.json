@@ -49,6 +49,7 @@
 		"@stremio/stremio-video": "^0.0.70",
 		"embla-carousel-autoplay": "^8.6.0",
 		"eventemitter3": "^5.0.4",
-		"lucide-svelte": "^0.563.0"
+		"lucide-svelte": "^0.563.0",
+		"svelte-youtube-embed": "^0.4.6"
 	}
 }

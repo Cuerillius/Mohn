@@ -11,6 +11,7 @@
         "embla-carousel-autoplay": "^8.6.0",
         "eventemitter3": "^5.0.4",
         "lucide-svelte": "^0.563.0",
+        "svelte-youtube-embed": "^0.4.6",
       },
       "devDependencies": {
         "@eslint/compat": "^2.0.2",
@@ -658,6 +659,8 @@
     "svelte-eslint-parser": ["svelte-eslint-parser@1.4.1", "", { "dependencies": { "eslint-scope": "^8.2.0", "eslint-visitor-keys": "^4.0.0", "espree": "^10.0.0", "postcss": "^8.4.49", "postcss-scss": "^4.0.9", "postcss-selector-parser": "^7.0.0" }, "peerDependencies": { "svelte": "^3.37.0 || ^4.0.0 || ^5.0.0" }, "optionalPeers": ["svelte"] }, "sha512-1eqkfQ93goAhjAXxZiu1SaKI9+0/sxp4JIWQwUpsz7ybehRE5L8dNuz7Iry7K22R47p5/+s9EM+38nHV2OlgXA=="],
 
     "svelte-toolbelt": ["svelte-toolbelt@0.10.6", "", { "dependencies": { "clsx": "^2.1.1", "runed": "^0.35.1", "style-to-object": "^1.0.8" }, "peerDependencies": { "svelte": "^5.30.2" } }, "sha512-YWuX+RE+CnWYx09yseAe4ZVMM7e7GRFZM6OYWpBKOb++s+SQ8RBIMMe+Bs/CznBMc0QPLjr+vDBxTAkozXsFXQ=="],
+
+    "svelte-youtube-embed": ["svelte-youtube-embed@0.4.6", "", { "dependencies": { "svelte": "^5.15.0" } }, "sha512-93pXtFhnc9azu+NPMTL5EC9Ut7oIu4ECMN358LgmnjQwJaq9ATanH06pcet3OnU9IBITOvhy9fxyfhk0zoUJEQ=="],
 
     "tabbable": ["tabbable@6.4.0", "", {}, "sha512-05PUHKSNE8ou2dwIxTngl4EzcnsCDZGJ/iCLtDflR/SHB/ny14rXc+qU5P4mG9JkusiV7EivzY9Mhm55AzAvCg=="],
 

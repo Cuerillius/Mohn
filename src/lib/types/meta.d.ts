@@ -15,57 +15,7 @@ interface Meta {
 		guessStream: boolean;
 	};
 	metaItem: {
-		content: Loadable<{
-			id: string;
-			type: string;
-			name: string;
-			poster: string;
-			background: string;
-			logo: string;
-			description: string;
-			releaseInfo: string;
-			runtime: string;
-			released: string;
-			posterShape: string;
-			links: Array<{
-				name: string;
-				category: string;
-				url: string;
-			}>;
-			trailerStreams: Array<{
-				ytId: string;
-				description: string;
-				progress: number | null;
-				deepLinks: {
-					player: string;
-					externalPlayer: {
-						download: string | null;
-						streaming: string | null;
-						playlist: string | null;
-						fileName: string | null;
-						openPlayer: string | null;
-						web: string | null;
-						androidTv: string | null;
-						tizen: string | null;
-						webos: string | null;
-					};
-				};
-				lastUsed: string | null;
-			}>;
-			behaviorHints: {
-				defaultVideoId: string;
-				featuredVideoId: string | null;
-				hasScheduledVideos: boolean;
-			};
-			videos: any[];
-			inLibrary: boolean;
-			watched: boolean;
-			deepLinks: {
-				metaDetailsVideos: string | null;
-				metaDetailsStreams: string | null;
-				player: string | null;
-			};
-		}>;
+		content: Loadable<DiscoverItem>;
 	};
 	addon: {
 		manifest: {

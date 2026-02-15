@@ -1,24 +1,11 @@
 <script lang="ts">
-	import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { ArrowRight } from 'lucide-svelte';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Button } from '$lib/components/ui/button';
 	import CatalogSkeleton from '$lib/components/skeletons/catalog.svelte';
 	import CatalogItem from '$lib/components/catalogItem.svelte';
+	import ScrollArea from './scrollArea.svelte';
 
 	let { catalog }: { catalog: Catalog } = $props();
-
-	function scrollCarousel(e: MouseEvent, direction: 'left' | 'right') {
-		const button = e.currentTarget as HTMLButtonElement;
-		const container = button.parentElement?.querySelector('.carousel-container');
-
-		if (container) {
-			const scrollAmount = container.clientWidth * 0.75;
-			container.scrollBy({
-				left: direction === 'left' ? -scrollAmount : scrollAmount,
-				behavior: 'smooth'
-			});
-		}
-	}
 </script>
 
 {#if catalog?.content}
@@ -41,65 +28,23 @@
 				>
 			</div>
 
-			<div class="group/carousel relative">
-				<button
-					onclick={(e) => scrollCarousel(e, 'left')}
-					class=" absolute top-1/2 left-0 z-60 h-3/4 w-20 -translate-y-1/2 bg-linear-to-r from-background via-background to-transparent"
-				>
-					<Button
-						variant="secondary"
-						size="icon"
-						class=" z-40 rounded-full opacity-0 shadow-xl transition-all duration-300 group-hover/carousel:opacity-100 disabled:opacity-0"
-						onclick={(e) => scrollCarousel(e, 'left')}
-					>
-						<ChevronLeft class="h-6 w-6" />
-					</Button>
-				</button>
-
-				<div
-					class="carousel-container scrollbar-hide -my-32 flex w-full gap-8 overflow-x-auto scroll-smooth px-20 py-32"
-				>
-					{#each catalog.content.content as entry}
-						<CatalogItem {entry} />
-					{/each}
-					{#if catalog.content.content.length === 10}
-						<div class="relative w-48 shrink-0">
-							<a href="/">
-								<div
-									class="mt-2 flex aspect-2/3 w-full flex-col items-center justify-center rounded-lg border border-muted"
-								>
-									<ArrowRight class="h-8 w-8 text-gray-500" />
-									<p class="text-gray-500">View more</p>
-								</div>
-							</a>
-						</div>
-					{/if}
-				</div>
-
-				<button
-					onclick={(e) => scrollCarousel(e, 'right')}
-					class=" absolute top-1/2 right-0 z-60 h-3/4 w-20 -translate-y-1/2 bg-linear-to-l from-background via-background to-transparent"
-				>
-					<Button
-						variant="secondary"
-						size="icon"
-						class="rounded-full opacity-0 shadow-xl transition-all duration-300 group-hover/carousel:opacity-100"
-						onclick={(e) => scrollCarousel(e, 'right')}
-					>
-						<ChevronRight class="h-6 w-6" />
-					</Button>
-				</button>
-			</div>
+			<ScrollArea>
+				{#each catalog.content.content as entry}
+					<CatalogItem {entry} />
+				{/each}
+				{#if catalog.content.content.length === 10}
+					<div class="relative w-48 shrink-0">
+						<a href="/">
+							<div
+								class="mt-2 flex aspect-2/3 w-full flex-col items-center justify-center rounded-lg border border-muted"
+							>
+								<ArrowRight class="h-8 w-8 text-gray-500" />
+								<p class="text-gray-500">View more</p>
+							</div>
+						</a>
+					</div>
+				{/if}
+			</ScrollArea>
 		</div>
 	{/if}
 {/if}
-
-<style>
-	.scrollbar-hide {
-		-ms-overflow-style: none;
-		scrollbar-width: none;
-	}
-	.scrollbar-hide::-webkit-scrollbar {
-		display: none;
-	}
-</style>
