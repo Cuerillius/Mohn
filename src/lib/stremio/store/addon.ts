@@ -26,11 +26,7 @@ export const addon = {
 	configure: (addon: Addon) => {
 		window.open(addon.transportUrl.replace('manifest.json', 'configure'), '_blank');
 	},
-	unload: () => {
-		stremio.dispatch({
-			action: 'Unload'
-		});
-	}
+
 };
 
 async function getManifestFromUrl(url: string) {

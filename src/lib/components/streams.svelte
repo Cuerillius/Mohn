@@ -6,7 +6,6 @@
 	import { Dot, HardDrive, Info, Layers, OctagonAlert, Play } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import Skeleton from '$lib/components/ui/skeleton/skeleton.svelte';
-	import { onDestroy } from 'svelte';
 
 	let {
 		streams
@@ -47,9 +46,6 @@
 		};
 	}
 
-	onDestroy(() => {
-		meta.unload();
-	});
 </script>
 
 <div

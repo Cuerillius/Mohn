@@ -2,7 +2,7 @@
 	import Image from '$lib/components/image.svelte';
 	import { meta } from '$lib/stremio/store/meta';
 	import { Bookmark, Pause, Play } from 'lucide-svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import Streams from '$lib/components/streams.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ImageVignete from '$lib/components/imageVignete.svelte';
@@ -52,9 +52,6 @@
 		isPlaying = !isPlaying;
 	}
 
-	onDestroy(() => {
-		meta.unload();
-	});
 </script>
 
 <div class="flex flex-col gap-4">

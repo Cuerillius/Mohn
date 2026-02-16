@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import {  onMount } from 'svelte';
 	import { stream, player } from '$lib/stremio/store/player';
 	import { video } from '$lib/stremio/store/video';
-	import { streamingServer } from '$lib/stremio/store/streamingServer';
 	import { streamingServerUrls } from '$lib/stremio/store/streamingServerUrls';
 
 	let container: HTMLDivElement;
@@ -11,12 +10,6 @@
 		video.init(container);
 	});
 
-	onDestroy(() => {
-		video.unload();
-		player.unload();
-		streamingServer.unload();
-		streamingServerUrls.unload();
-	});
 </script>
 
 <div class="player-wrapper">

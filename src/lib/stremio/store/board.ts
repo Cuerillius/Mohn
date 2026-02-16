@@ -31,9 +31,5 @@ export const board = {
 			}
 		});
 	},
-	unload: () => {
-		stremio.dispatch({
-			action: 'Unload'
-		});
-	}
+
 };

@@ -4,7 +4,7 @@
 	import { auth } from '$lib/stremio/store/auth';
 	import { localSearch } from '$lib/stremio/store/localSearch';
 	import { CornerDownLeft, SearchIcon, History, Search } from 'lucide-svelte';
-	import { onDestroy, onMount, tick } from 'svelte';
+	import {  onMount, tick } from 'svelte';
 
 	let searchQuery = $state('');
 	let isFocused = $state(false);
@@ -19,11 +19,6 @@
 
 	onMount(() => {
 		localSearch.load();
-	});
-
-	onDestroy(() => {
-		localSearch.unload();
-		auth.unload();
 	});
 
 	function updatePosition() {

@@ -31,9 +31,5 @@ export const auth = {
 			args: { action: 'Logout' }
 		});
 	},
-	unload: () => {
-		stremio.dispatch({
-			action: 'Unload'
-		});
-	}
+
 };

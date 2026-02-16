@@ -17,6 +17,7 @@ export function createModelStore<T>(modelName: string): Readable<T | null> {
 
         return () => {
             stremio.off('NewState', onNewState);
+             stremio.dispatch({ action: 'Unload' }, modelName);
         };
     });
 }

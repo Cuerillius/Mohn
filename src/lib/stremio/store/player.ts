@@ -47,10 +47,5 @@ export const player = {
 			}
 		});
 	},
-	unload: () => {
-		streamingServer.unload();
-		stremio.dispatch({
-			action: 'Unload'
-		});
-	}
+
 };

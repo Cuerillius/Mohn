@@ -5,12 +5,14 @@
 	import { House, Package, User } from 'lucide-svelte';
 	import Logo from '$lib/assets/logo.svelte';
 	import SearchComponent from '$lib/components/search.svelte';
+	import MobileGuard from '$lib/components/mobileGuard.svelte';
 
 	let { children } = $props();
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 <InitializationGuard>
+	<MobileGuard>
 	<div class="min-h-screen bg-background text-white">
 		<nav
 			class="fixed inset-x-12 top-4 z-1000 flex items-center gap-4 rounded-xl border border-border bg-background/40 px-4 py-2 backdrop-blur-xl"
@@ -37,4 +39,5 @@
 
 		{@render children()}
 	</div>
+</MobileGuard>
 </InitializationGuard>

@@ -1,12 +1,7 @@
 <script lang="ts">
 	import { auth } from '$lib/stremio/store/auth';
-	import { onDestroy } from 'svelte';
 
 	let authValue = $state({ email: '', password: '' });
-
-	onDestroy(() => {
-		auth.unload();
-	});
 </script>
 
 <div class="flex flex-col gap-4 border px-20 py-32">

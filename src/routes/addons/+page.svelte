@@ -5,13 +5,9 @@
 	import { BadgeCheck, CornerDownLeft, Settings, Trash } from 'lucide-svelte';
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { Badge } from '$lib/components/ui/badge';
-	import { onDestroy } from 'svelte';
 
 	let addonValue = $state({ manifest: '' });
 
-	onDestroy(() => {
-		addon.unload();
-	});
 </script>
 
 <div class="flex flex-col items-center justify-center gap-4 px-20 py-26">
