@@ -1,15 +1,14 @@
 <script lang="ts">
-	import {  onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import { stream, player } from '$lib/stremio/store/player';
-	import { video } from '$lib/stremio/store/video';
+	import { video, videoState } from '$lib/stremio/store/video';
 	import { streamingServerUrls } from '$lib/stremio/store/streamingServerUrls';
-
+	import * as Select from '$lib/components/ui/select/index.js';
 	let container: HTMLDivElement;
 
 	onMount(() => {
 		video.init(container);
 	});
-
 </script>
 
 <div class="player-wrapper">
@@ -88,5 +87,32 @@
 		>
 			streaming server</button
 		>
+		<input
+			type="range"
+			min="1"
+			max="100"
+			value="50"
+			class="slider"
+			onchange={(e) => video.volume(parseInt((e.target as HTMLInputElement).value))}
+		/>
+		<input
+			class="w-full"
+			type="range"
+			min="0"
+			max={$videoState.duration}
+			value={$videoState.time}
+			onchange={(e) => video.setTime(parseInt((e.target as HTMLInputElement).value))}
+		/>
+		{#each $videoState.audioTracks as track}
+			<button
+				onclick={() => video.setAudioTrack(track.id)}
+				class:font-bold={$videoState.selectedAudioTrackId === track.id}
+			>
+				{track.label}
+			</button>
+		{/each}
+		<div class="state-display">
+			<pre>{JSON.stringify($videoState, null, 2)}</pre>
+		</div>
 	</div>
 </div>
