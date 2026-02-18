@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { meta } from '$lib/stremio/store/meta';
-	import { stream } from '$lib/stremio/store/player';
+	import { encodeStream } from '$lib/streamCoder';
 	import { Dot, HardDrive, Info, Layers, OctagonAlert, Play } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import Skeleton from '$lib/components/ui/skeleton/skeleton.svelte';
@@ -23,8 +22,12 @@
 	);
 
 	function selectStream(selectedStream: Stream) {
-		stream.set(selectedStream);
-		goto('/player');
+		const {
+			deepLinks: { player, ...cleanDeepLinks },
+			...cleanStream
+		} = selectedStream;
+		const encoded = encodeStream({ ...cleanStream, deepLinks: cleanDeepLinks });
+		goto(`/player/${encoded}`);
 	}
 
 	const triggerContent = $derived(
@@ -45,7 +48,6 @@
 			episode: episodeMatch ? parseInt(episodeMatch[1], 10) : null
 		};
 	}
-
 </script>
 
 <div

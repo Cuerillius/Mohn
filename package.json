@@ -47,9 +47,11 @@
 		"@originjs/vite-plugin-commonjs": "^1.0.3",
 		"@stremio/stremio-core-web": "^0.52.0",
 		"@stremio/stremio-video": "^0.0.70",
+		"@types/pako": "^2.0.4",
 		"embla-carousel-autoplay": "^8.6.0",
 		"eventemitter3": "^5.0.4",
 		"lucide-svelte": "^0.563.0",
+		"pako": "^2.1.0",
 		"svelte-youtube-embed": "^0.4.6"
 	}
 }

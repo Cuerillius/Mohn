@@ -9,7 +9,7 @@ let videoContainer: HTMLDivElement;
 const initialState = {
 	manifest: null,
 	stream: null,
-	paused: true,
+	paused: false,
 	time: 0,
 	duration: 0,
 	buffering: false,
