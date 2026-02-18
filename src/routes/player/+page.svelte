@@ -1,118 +1,130 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { stream, player } from '$lib/stremio/store/player';
-	import { video, videoState } from '$lib/stremio/store/video';
-	import { streamingServerUrls } from '$lib/stremio/store/streamingServerUrls';
+	import Seekbar from '$lib/components/seekbar.svelte';
+	import Slider from '$lib/components/ui/slider/slider.svelte';
+	import {
+		AudioLines,
+		Captions,
+		CaptionsOff,
+		ChevronLeft,
+		Maximize,
+		Pause,
+		Play,
+		Volume1,
+		Volume2,
+		VolumeOff,
+		VolumeX
+	} from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
+	import { video, videoState } from '$lib/stremio/store/video';
+	import { onMount } from 'svelte';
+	import { toggleFullscreen } from '$lib/stremio/store/fullscreen';
+	import { player, stream } from '$lib/stremio/store/player';
+
 	let container: HTMLDivElement;
 
 	onMount(() => {
-		video.init(container);
+		video.init(container)
+		stream.subscribe((s) => {
+			if(s){
+				player.loadStream(s);
+			}
+		});
 	});
+
+	const getVolumeIcon = () => {
+		if ($videoState.muted || $videoState.volume === 0) return VolumeX;
+		if ($videoState.volume < 33) return VolumeOff;
+		if ($videoState.volume < 66) return Volume1;
+		return Volume2;
+	};
 </script>
 
-<div class="player-wrapper">
-	<div bind:this={container} class="video-holder"></div>
+<div
+	class="absolute top-4 left-4 rounded-xl border bg-background/40 p-4 shadow-2xl backdrop-blur-lg"
+>
+	<ChevronLeft class="h-8 w-8" />
+</div>
 
-	<div class="controls z-10 font-light">
-		{#if $stream}
+<div bind:this={container} class="video-holder"></div>
+
+<div
+	class="absolute right-4 bottom-4 left-4 rounded-xl border bg-background/40 p-2 px-3 shadow-2xl backdrop-blur-lg"
+>
+	<Seekbar
+		time={$videoState.time}
+		duration={$videoState.duration}
+		buffered={$videoState.buffered}
+		updateTime={(newTime: number) => video.setTime(newTime)}
+	/>
+	<div class="flex items-center justify-between">
+		<div class="flex items-center gap-3">
 			<button
 				onclick={() => {
-					(video.loadStream($stream), player.loadStream($stream));
+					$videoState.paused ? video.play() : video.pause();
 				}}
+				class="rounded-full p-2 transition-colors"
 			>
-				load stream
+				{#if $videoState.paused}
+					<Play class="h-6 w-6 fill-current" />
+				{:else}
+					<Pause class="h-6 w-6 fill-current" />
+				{/if}
 			</button>
-		{/if}
-		<button
-			onclick={() => {
-				(video.play(), player.pauseChanged(false));
-			}}
-		>
-			play
-		</button>
-		<button
-			onclick={() => {
-				(video.pause(), player.pauseChanged(true));
-			}}
-		>
-			pause
-		</button>
-		<button
-			onclick={() => {
-				(video.volume(100),
-					player.videoParamsChanged({
-						manifest: null,
-						stream: null,
-						paused: null,
-						time: null,
-						duration: null,
-						buffering: null,
-						buffered: null,
-						volume: null,
-						muted: null,
-						playbackSpeed: null,
-						videoParams: null,
-						audioTracks: [],
-						selectedAudioTrackId: null,
-						subtitlesTracks: [],
-						selectedSubtitlesTrackId: null,
-						subtitlesOffset: null,
-						subtitlesSize: null,
-						subtitlesTextColor: null,
-						subtitlesBackgroundColor: null,
-						subtitlesOutlineColor: null,
-						extraSubtitlesTracks: [],
-						selectedExtraSubtitlesTrackId: null,
-						extraSubtitlesSize: null,
-						extraSubtitlesDelay: null,
-						extraSubtitlesOffset: null,
-						extraSubtitlesTextColor: null,
-						extraSubtitlesBackgroundColor: null,
-						extraSubtitlesOutlineColor: null
-					}));
-			}}
-		>
-			volume</button
-		>
 
-		<button onclick={() => video.muted(false)}> unmute</button>
-		<button onclick={() => video.muted(true)}> mute</button>
-		<button
-			onclick={() => {
-				streamingServerUrls.addServerUrl('http://127.0.0.1:11470');
-				streamingServerUrls.selectServerUrl('http://127.0.0.1:11470');
-				streamingServerUrls.reloadServer();
-			}}
-		>
-			streaming server</button
-		>
-		<input
-			type="range"
-			min="1"
-			max="100"
-			value="50"
-			class="slider"
-			onchange={(e) => video.volume(parseInt((e.target as HTMLInputElement).value))}
-		/>
-		<input
-			class="w-full"
-			type="range"
-			min="0"
-			max={$videoState.duration}
-			value={$videoState.time}
-			onchange={(e) => video.setTime(parseInt((e.target as HTMLInputElement).value))}
-		/>
-		{#each $videoState.audioTracks as track}
-			<button
-				onclick={() => video.setAudioTrack(track.id)}
-				class:font-bold={$videoState.selectedAudioTrackId === track.id}
-			>
-				{track.label}
+			<div class="group flex items-center gap-2">
+				<button
+					onclick={() => video.muted(!$videoState.muted)}
+					class="rounded-full p-2 transition-colors"
+				>
+					<svelte:component this={getVolumeIcon()} class="h-5 w-5" />
+				</button>
+				<div class="w-24">
+					<Slider type="single" bind:value={$videoState.volume} max={100} step={1} />
+				</div>
+			</div>
+		</div>
+
+		<div class="flex items-center gap-4">
+			{#if $videoState.audioTracks.length > 0}
+				<div class="flex items-center gap-1">
+					<AudioLines class="h-5 w-5" />
+					<Select.Root type="single">
+						<Select.Trigger class="h-8 border-none bg-transparent  text-xs  focus:ring-0">
+							{$videoState.audioTracks.find((t) => t.id === $videoState.selectedAudioTrackId)
+								?.label}
+						</Select.Trigger>
+						<Select.Content>
+							{#each $videoState.audioTracks as track}
+								<Select.Item value={track.id}>{track.label}</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+			{/if}
+
+			<!-- <div class="flex items-center gap-1">
+				<button onclick={() => video.setSubtitlesEnabled(!subtitlesEnabled)}>
+                    {#if subtitlesEnabled}
+                        <Captions class="h-5 w-5 " />
+                    {:else}
+                        <CaptionsOff class="h-5 w-5 " />
+                    {/if}
+                </button>
+				<Select.Root type="single" bind:value={$videoState.selectedSubtitlesTrackId}>
+					<Select.Trigger class="h-8 border-none bg-transparent text-xs  focus:ring-0">
+						{subtitlesTracks.find((t) => t.id === $videoState.selectedSubtitlesTrackId)?.label}
+					</Select.Trigger>
+					<Select.Content >
+						{#each $videoState.subtitlesTracks as track}
+							<Select.Item value={track.id}>{track.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div> -->
+
+			<button class="rounded-full p-2" onclick={async () => toggleFullscreen()}>
+				<Maximize class="h-5 w-5" />
 			</button>
-		{/each}
-		<div class="state-display">
-			<pre>{JSON.stringify($videoState, null, 2)}</pre>
 		</div>
 	</div>
 </div>

@@ -2,6 +2,7 @@ import { createModelStore } from './modelStore';
 import { derived, get, writable, type Writable } from 'svelte/store';
 import { getStremio } from '../core';
 import { streamingServer } from './streamingServer';
+import { video } from './video';
 
 const playerStore = createModelStore<any>('player');
 const stremio = getStremio();
@@ -13,6 +14,7 @@ export const player = {
 
 	loadStream: (stream: Stream) => {
 		const currentStreamingServer = get(streamingServer);
+		video.loadStream(stream), 
 		stremio.dispatch({
 			action: 'Load',
 			args: {
@@ -27,23 +29,28 @@ export const player = {
 			}
 		});
 	},
-	pauseChanged: (isPaused: boolean) => {
+	pause: (paused: boolean) => {
+		if (paused) {
+			video.pause();
+		} else {
+			video.play();
+		}
 		stremio.dispatch({
 			action: 'Player',
 			args: {
 				action: 'PausedChanged',
 				args: {
-					paused: isPaused
+					paused: paused
 				}
 			}
 		});
 	},
-	videoParamsChanged: (videoParams: VideoParams) => {
+	videoParamsChanged: (propName: string, propValue: any) => {
 		stremio.dispatch({
 			action: 'Player',
 			args: {
 				action: 'VideoParamsChanged',
-				args: { videoParams }
+				args: { propName: propValue }
 			}
 		});
 	},

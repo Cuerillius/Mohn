@@ -9,7 +9,7 @@ let videoContainer: HTMLDivElement;
 const initialState = {
 	manifest: null,
 	stream: null,
-	paused: true, // Default to true usually
+	paused: true,
 	time: 0,
 	duration: 0,
 	buffering: false,
@@ -38,7 +38,6 @@ const initialState = {
 	hasError: null
 };
 
-// 2. Create the Svelte Store
 export const videoState = writable(initialState);
 
 const updateState = (name: string, value: any) => {
@@ -87,7 +86,8 @@ export const video = {
 		setProp('playbackSpeed', rate);
 	},
 	setAudioTrack: (id: string) => setProp('selectedAudioTrackId', id),
-	setTime: (time: number) => setProp('time', time)
+	setTime: (time: number) => setProp('time', time),
+	
 };
 
 videoCore.on('implementationChanged', (manifest: any) => {
