@@ -86,8 +86,8 @@ export const video = {
 		setProp('playbackSpeed', rate);
 	},
 	setAudioTrack: (id: string) => setProp('selectedAudioTrackId', id),
-	setTime: (time: number) => setProp('time', time),
-	
+	setSubtitlesTrack: (id: string) => setProp('selectedSubtitlesTrackId', id),
+	setTime: (time: number) => setProp('time', time)
 };
 
 videoCore.on('implementationChanged', (manifest: any) => {

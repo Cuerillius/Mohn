@@ -14,7 +14,7 @@ export const player = {
 
 	loadStream: (stream: Stream) => {
 		const currentStreamingServer = get(streamingServer);
-		video.loadStream(stream), 
+		video.loadStream(stream);
 		stremio.dispatch({
 			action: 'Load',
 			args: {
@@ -31,9 +31,9 @@ export const player = {
 	},
 	pause: (paused: boolean) => {
 		if (paused) {
-			video.pause();
-		} else {
 			video.play();
+		} else {
+			video.pause();
 		}
 		stremio.dispatch({
 			action: 'Player',
@@ -53,6 +53,5 @@ export const player = {
 				args: { propName: propValue }
 			}
 		});
-	},
-
+	}
 };
