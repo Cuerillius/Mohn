@@ -1,14 +1,17 @@
 import pako from 'pako';
 
-export function encodeStream(streamObj: any): string {
+export function encodeStream(streamObj: Stream): string {
 	const str = JSON.stringify(streamObj);
 	const compressed = pako.deflate(str);
 	const base64 = btoa(String.fromCharCode(...compressed));
 	return encodeURIComponent(base64);
 }
 
-export function decodeStream(encodedStr: string): any {
+export function decodeStream(encodedStr: string | undefined): Stream | null {
 	try {
+		if (!encodedStr) {
+			return null;
+		}
 		const base64 = decodeURIComponent(encodedStr);
 		const binary = atob(base64);
 		const charCodes = new Uint8Array(binary.length);

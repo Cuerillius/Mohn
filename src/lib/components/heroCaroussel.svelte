@@ -3,7 +3,7 @@
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import type { CarouselAPI } from '$lib/components/ui/carousel/context';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { ArrowLeft, ArrowRight, BadgeCheck, Dot, Info, Play, Star } from 'lucide-svelte';
+	import { ArrowLeft, ArrowRight } from 'lucide-svelte';
 	import HeroDetail from './heroDetail.svelte';
 
 	let { catalog }: { catalog: Catalog } = $props();
@@ -22,9 +22,15 @@
 		count = api.scrollSnapList().length;
 		current = api.selectedScrollSnap() + 1;
 
-		api.on('select', () => {
+		const onSelect = () => {
 			current = api!.selectedScrollSnap() + 1;
-		});
+		};
+
+		api.on('select', onSelect);
+
+		return () => {
+			api?.off('select', onSelect);
+		};
 	});
 </script>
 

@@ -9,6 +9,9 @@ export const search = {
 	subscribe: derived(searchStore, ($search) => ({
 		catalogs: $search?.catalogs
 	})).subscribe,
+	unload: () => {
+		stremio.dispatch({ action: 'Unload' }, 'search');
+	},
 	initialLoad: (query: string) => {
 		stremio.dispatch({
 			action: 'Load',
@@ -31,6 +34,5 @@ export const search = {
 				}
 			}
 		});
-	},
-
+	}
 };

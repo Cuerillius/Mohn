@@ -9,7 +9,9 @@ export const board = {
 	subscribe: derived(boardStore, ($board) => ({
 		catalogs: $board?.catalogs
 	})).subscribe,
-
+	unload: () => {
+		stremio.dispatch({ action: 'Unload' }, 'board');
+	},
 	initialLoad: () => {
 		stremio.dispatch({
 			action: 'Load',
@@ -30,6 +32,5 @@ export const board = {
 				args: { start, end }
 			}
 		});
-	},
-
+	}
 };

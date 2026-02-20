@@ -5,6 +5,7 @@
 	import { Dot, HardDrive, Info, Layers, OctagonAlert, Play } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import Skeleton from '$lib/components/ui/skeleton/skeleton.svelte';
+	import EmptyState from './emptyState.svelte';
 
 	let {
 		streams
@@ -22,11 +23,7 @@
 	);
 
 	function selectStream(selectedStream: Stream) {
-		const {
-			deepLinks: { player, ...cleanDeepLinks },
-			...cleanStream
-		} = selectedStream;
-		const encoded = encodeStream({ ...cleanStream, deepLinks: cleanDeepLinks });
+		const encoded = encodeStream({ ...selectedStream, deepLinks: null });
 		goto(`/player/${encoded}`);
 	}
 
@@ -84,14 +81,16 @@
 	</div>
 
 	{#if filteredStreams.length === 0 || filteredStreams.every((s) => s.content?.type === 'Err')}
-		<div class="flex flex-col items-center justify-center gap-2 p-8 text-center text-sm">
-			<div class="rounded-lg border p-3">
-				<OctagonAlert class="h-8 w-8" />
-			</div>
-			<p class="text-lg font-bold">No available streams</p>
-			<p class="w-60">Go and install some addons that provide streams for this content</p>
+		<EmptyState
+			icon={OctagonAlert}
+			layout="container"
+			title="No available streams"
+			titleClass="text-lg font-bold"
+			descriptionClass="text-white"
+			description="Go and install some addons that provide streams for this content."
+		>
 			<Button variant="outline" onclick={() => goto('/addons')}>Addons</Button>
-		</div>
+		</EmptyState>
 	{:else}
 		<div class="flex-1 overflow-y-auto p-4">
 			<div class="flex flex-col gap-3">

@@ -1,31 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import Seekbar from '$lib/components/seekbar.svelte';
-	import Slider from '$lib/components/ui/slider/slider.svelte';
-	import * as Select from '$lib/components/ui/select/index.js';
-	import {
-		AudioLines,
-		Captions,
-		CaptionsOff,
-		ChevronLeft,
-		Maximize,
-		Pause,
-		Play,
-		Volume1,
-		Volume2,
-		VolumeOff
-	} from 'lucide-svelte';
+	import { ChevronLeft, OctagonAlert } from 'lucide-svelte';
 
 	import { video, videoState } from '$lib/stremio/store/video';
-	import { toggleFullscreen } from '$lib/stremio/store/fullscreen';
 	import { decodeStream } from '$lib/streamCoder';
+	import VideoControlles from '$lib/components/videoControlles.svelte';
+	import EmptyState from '$lib/components/emptyState.svelte';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import Loader from '$lib/components/loader.svelte';
 
 	let container = $state<HTMLDivElement>();
 	let showUI = $state(true);
 	let hideTimeout: ReturnType<typeof setTimeout>;
 
-	let decodedStream = $derived(decodeStream($page.params.streamData));
+	let decodedStream = $derived(decodeStream(page.params.streamData));
 
 	const resetHideTimer = () => {
 		showUI = true;
@@ -64,34 +54,55 @@
 			clearTimeout(hideTimeout);
 		};
 	});
-
-	let selectedAudioLabel = $derived(
-		$videoState.audioTracks.find((t) => t.id === $videoState.selectedAudioTrackId)?.label ??
-			'Default Audio'
-	);
-
-	let selectedSubtitleLabel = $derived(
-		$videoState.subtitlesTracks.find((t) => t.id === $videoState.selectedSubtitlesTrackId)?.label ??
-			'Default Subtitles'
-	);
 </script>
 
 {#if !decodedStream}
-	<div class="flex h-screen w-screen items-center justify-center bg-black text-white">
-		<p>Invalid stream data</p>
-	</div>
+	<EmptyState
+		icon={OctagonAlert}
+		layout="fullscreen"
+		title="Stream not found"
+		titleClass="text-4xl font-bold"
+		description="The stream you are trying to access is not available. It might have been removed or is temporarily unavailable. Please check back later or try a different stream."
+	>
+		<a href="/" class="flex items-center gap-1 text-gray-500 transition-colors hover:text-white">
+			<ArrowLeft class="h-4 w-4" /> Go back to home
+		</a>
+	</EmptyState>
+{:else if $videoState.hasError}
+	<EmptyState
+		icon={OctagonAlert}
+		layout="fullscreen"
+		title="Playback Error"
+		titleClass="text-4xl font-bold"
+		description="An error occurred while trying to play the stream. This could be due to a network issue, an unsupported format, or a problem with the stream source. Please try refreshing the page, checking your network connection, or selecting a different stream."
+	>
+		<button
+			onclick={() => window.history.back()}
+			class="flex items-center gap-1 text-gray-500 transition-colors hover:text-white"
+		>
+			<ArrowLeft class="h-4 w-4" /> Go back
+		</button>
+	</EmptyState>
 {:else}
 	<div
 		onclick={() => {
 			$videoState.paused ? video.play() : video.pause();
 		}}
-		onmousemove={() => resetHideTimer()}
+		onmousemove={resetHideTimer}
 		bind:this={container}
 		role="button"
 		tabindex="0"
 		aria-label="Video player"
 		class="fixed inset-0 z-0 flex h-screen w-screen items-center justify-center bg-black"
 	></div>
+
+	{#if !$videoState.loaded || $videoState.buffering}
+		<div
+			class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+		>
+			<Loader text="Loading stream..." />
+		</div>
+	{/if}
 
 	<div
 		class="absolute top-4 left-4 z-50 transition-opacity duration-300"
@@ -119,104 +130,20 @@
 			updateTime={(newTime) => video.setTime(newTime)}
 		/>
 
-		<div class="flex items-center justify-between text-white">
-			<div class="flex items-center gap-4">
-				<button
-					onclick={() => ($videoState.paused ? video.play() : video.pause())}
-					class="rounded-full p-2 transition-colors hover:bg-white/10"
-				>
-					{#if $videoState.paused}
-						<Play class="h-6 w-6 fill-current" />
-					{:else}
-						<Pause class="h-6 w-6 fill-current" />
-					{/if}
-				</button>
-
-				<div class="group flex items-center gap-3">
-					<button
-						onclick={() => video.muted(!$videoState.muted)}
-						class="rounded-full p-2 transition-colors hover:bg-white/10"
-					>
-						{#if $videoState.muted || $videoState.volume === 0}
-							<VolumeOff class="h-5 w-5" />
-						{:else if $videoState.volume < 50}
-							<Volume1 class="h-5 w-5" />
-						{:else}
-							<Volume2 class="h-5 w-5" />
-						{/if}
-					</button>
-
-					<div class="w-24">
-						<Slider
-							type="single"
-							value={$videoState.volume}
-							max={100}
-							onValueChange={(v) => video.volume(v as number)}
-						/>
-					</div>
-				</div>
-			</div>
-
-			<div class="flex items-center gap-4">
-				{#if $videoState.audioTracks.length > 0}
-					<div class="flex items-center gap-2">
-						<AudioLines class="h-5 w-5 text-white/70" />
-						<Select.Root
-							type="single"
-							value={$videoState.selectedAudioTrackId || ''}
-							onValueChange={(id) => video.setAudioTrack(id)}
-						>
-							<Select.Trigger
-								class="h-8 min-w-25 border-none bg-transparent text-xs font-medium text-white shadow-none hover:bg-white/5 focus:ring-0"
-							>
-								{selectedAudioLabel}
-							</Select.Trigger>
-							<Select.Content class="max-h-50 overflow-y-auto">
-								{#each $videoState.audioTracks as track}
-									<Select.Item value={track.id} label={track.label}>
-										{track.label}
-									</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-				{/if}
-
-				{#if $videoState.subtitlesTracks.length > 0}
-					<div class="flex items-center gap-2">
-						{#if $videoState.selectedSubtitlesTrackId}
-							<Captions class="h-5 w-5" />
-						{:else}
-							<CaptionsOff class="h-5 w-5" />
-						{/if}
-						<Select.Root
-							type="single"
-							value={$videoState.selectedSubtitlesTrackId || ''}
-							onValueChange={(id) => video.setSubtitlesTrack(id)}
-						>
-							<Select.Trigger
-								class="h-8 min-w-25 border-none bg-transparent text-xs font-medium text-white shadow-none hover:bg-white/5 focus:ring-0"
-							>
-								{selectedSubtitleLabel}
-							</Select.Trigger>
-							<Select.Content class="max-h-50 overflow-y-auto">
-								{#each $videoState.subtitlesTracks as track}
-									<Select.Item value={track.id} label={track.label}>
-										{track.label}
-									</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-				{/if}
-
-				<button
-					class="rounded-full p-2 transition-colors hover:bg-white/10"
-					onclick={() => toggleFullscreen()}
-				>
-					<Maximize class="h-5 w-5" />
-				</button>
-			</div>
-		</div>
+		<VideoControlles
+			paused={$videoState.paused}
+			volume={$videoState.volume}
+			muted={$videoState.muted}
+			subtitleTracks={$videoState.subtitlesTracks}
+			audioTracks={$videoState.audioTracks}
+			selectedSubtitle={$videoState.selectedSubtitlesTrackId}
+			selectedAudioTrack={$videoState.selectedAudioTrackId}
+			setVolume={(v) => video.volume(v)}
+			toggleMute={() => video.muted(!$videoState.muted)}
+			selectAudioTrack={(id) => video.setAudioTrack(id)}
+			selectSubtitleTrack={(id) => video.setSubtitlesTrack(id)}
+			play={() => video.play()}
+			pause={() => video.pause()}
+		/>
 	</div>
 {/if}

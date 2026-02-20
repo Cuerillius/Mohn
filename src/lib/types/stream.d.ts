@@ -23,6 +23,6 @@ interface Stream {
 			tizen: string | null;
 			webos: string | null;
 		};
-	};
+	} | null;
 	lastUsed: boolean | string | null;
 }

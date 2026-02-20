@@ -1,49 +1,39 @@
 export interface VideoPlayerState {
-	manifest: PlayerManifest;
-	stream: PlayerStream;
-
-	// --- Playback State ---
+	manifest: PlayerManifest | null;
+	stream: PlayerStream | null;
 	loaded: boolean;
 	paused: boolean;
-	time: number; // Current position in ms
-	duration: number; // Total length in ms
+	time: number;
+	duration: number;
 	buffering: boolean;
-	buffered: number; // Amount buffered in ms
+	buffered: number;
 	playbackSpeed: number;
 	volume: number;
 	muted: boolean;
 	hasError: string | null;
-
-	// --- Metadata ---
 	videoParams: {
 		hash: string | null;
 		size: number | null;
 		filename: string;
-	};
-
-	// --- Audio Tracks ---
+	} | null;
 	audioTracks: AudioTrack[];
 	selectedAudioTrackId: string | null;
-
-	// --- Subtitles (Internal/Embedded) ---
-	subtitlesTracks: SubtitleTrack[];
+	subtitlesTracks: SubtitleTrack[] | [];
 	selectedSubtitlesTrackId: string | null;
 	subtitlesOffset: number;
 	subtitlesSize: number;
-	subtitlesTextColor: string;
-	subtitlesBackgroundColor: string;
-	subtitlesOutlineColor: string;
+	subtitlesTextColor: string | null;
+	subtitlesBackgroundColor: string | null;
+	subtitlesOutlineColor: string | null;
 	subtitlesOpacity: number;
-
-	// --- Extra Subtitles (External/Addon) ---
-	extraSubtitlesTracks: SubtitleTrack[];
+	extraSubtitlesTracks: SubtitleTrack[] | [];
 	selectedExtraSubtitlesTrackId: string | null;
 	extraSubtitlesDelay: number | null;
 	extraSubtitlesSize: number;
 	extraSubtitlesOffset: number;
-	extraSubtitlesTextColor: string;
-	extraSubtitlesBackgroundColor: string;
-	extraSubtitlesOutlineColor: string;
+	extraSubtitlesTextColor: string | null;
+	extraSubtitlesBackgroundColor: string | null;
+	extraSubtitlesOutlineColor: string | null;
 	extraSubtitlesOpacity: number;
 }
 

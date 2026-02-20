@@ -39,11 +39,11 @@
 	onDestroy(() => {
 		if (observer) observer.disconnect();
 	});
-	let heroIndex = $derived($board.catalogs?.findIndex((c) => c.content?.type === 'Ready') ?? -1);
+	let heroIndex = $derived($board.catalogs?.findIndex((c) => c.content?.type !== 'Err') ?? -1);
 </script>
 
 <div class="relative flex flex-col gap-8">
-	{#if heroIndex !== -1 && $board.catalogs?.[heroIndex]}
+	{#if heroIndex !== -1 && $board.catalogs?.[heroIndex] && $board.catalogs[heroIndex].content?.type === 'Ready'}
 		<HeroCaroussel catalog={$board.catalogs[heroIndex]} />
 	{:else}
 		<HeroCarousselSkeleton />

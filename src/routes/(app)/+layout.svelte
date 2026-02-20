@@ -6,8 +6,15 @@
 	import Logo from '$lib/assets/logo.svelte';
 	import SearchComponent from '$lib/components/search.svelte';
 	import MobileGuard from '$lib/components/mobileGuard.svelte';
+	import { beforeNavigate } from '$app/navigation';
+	import { search } from '$lib/stremio/store/search';
+	import { board } from '$lib/stremio/store/board';
 
 	let { children } = $props();
+	beforeNavigate(() => {
+		search.unload();
+		board.unload();
+	});
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>

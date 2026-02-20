@@ -5,6 +5,7 @@
 	import { Info, Play } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import DetailBlock from './detailBlock.svelte';
+	import HeroCarousselSkeleton from './skeletons/heroCaroussel.svelte';
 
 	let {
 		item,
@@ -17,6 +18,7 @@
 
 <div class="relative h-screen w-full overflow-hidden">
 	<Image src={item.background} alt={item.name} class="h-full w-full object-cover" />
+
 	<ImageVignete />
 
 	<div class="absolute bottom-20 left-20 z-40 max-w-2xl">

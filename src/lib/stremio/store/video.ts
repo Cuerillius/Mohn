@@ -1,6 +1,7 @@
-import { get, writable } from 'svelte/store';
+import { get, writable, type Writable } from 'svelte/store';
 import { getVideo } from '../video';
 import { streamingServer } from './streamingServer';
+import type { VideoPlayerState } from '$lib/types/videoParams';
 
 const videoCore = await getVideo();
 
@@ -27,6 +28,7 @@ const initialState = {
 	subtitlesTextColor: null,
 	subtitlesBackgroundColor: null,
 	subtitlesOutlineColor: null,
+	subtitlesOpacity: 100,
 	extraSubtitlesTracks: [],
 	selectedExtraSubtitlesTrackId: null,
 	extraSubtitlesSize: 100,
@@ -35,10 +37,12 @@ const initialState = {
 	extraSubtitlesTextColor: null,
 	extraSubtitlesBackgroundColor: null,
 	extraSubtitlesOutlineColor: null,
+	extraSubtitlesOpacity: 100,
+	loaded: false,
 	hasError: null
 };
 
-export const videoState = writable(initialState);
+export const videoState: Writable<VideoPlayerState> = writable(initialState);
 
 const updateState = (name: string, value: any) => {
 	console.log('Updating video state:', name, value);
