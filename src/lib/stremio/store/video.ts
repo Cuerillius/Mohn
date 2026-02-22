@@ -45,7 +45,6 @@ const initialState = {
 export const videoState: Writable<VideoPlayerState> = writable(initialState);
 
 const updateState = (name: string, value: any) => {
-	console.log('Updating video state:', name, value);
 	videoState.update((s) => ({ ...s, [name]: value }));
 };
 

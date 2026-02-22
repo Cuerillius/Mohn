@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Image from '$lib/components/image.svelte';
 	import { meta } from '$lib/stremio/store/meta';
+	import { auth } from '$lib/stremio/store/auth';
 	import { Bookmark, Pause, Play } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import Streams from '$lib/components/streams.svelte';
@@ -10,6 +11,7 @@
 	import Skeleton from '$lib/components/ui/skeleton/skeleton.svelte';
 	import DetailBlockSkeleton from '$lib/components/skeletons/detailBlock.svelte';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import { library } from '$lib/stremio/store/library.js';
 
 	const { data } = $props();
 
@@ -42,7 +44,6 @@
 		}
 		isPlaying = !isPlaying;
 	}
-
 </script>
 
 <div class="flex flex-col gap-4">
@@ -109,7 +110,22 @@
 							}}
 							>{#if isImmersiveMode}<Pause />Pause Trailer{:else}<Play />Watch Trailer{/if}</Button
 						>
-						<Button variant="outline" class="p-6" onclick={() => {}}><Bookmark />Bookmark</Button>
+						<Button
+							disabled={!$auth.isLoggedIn}
+							variant="outline"
+							class="p-6"
+							onclick={(e) => {
+								e.stopPropagation();
+								if ($meta?.details?.content?.type === 'Ready') {
+									$meta.details?.content.content.inLibrary
+										? library.removeFromLibrary($meta.details.content.content.id)
+										: library.addToLibrary($meta.details.content.content);
+								}
+							}}
+							><Bookmark
+								fill={$meta.details.content.content.inLibrary ? 'currentColor' : 'none'}
+							/>Bookmark</Button
+						>
 					</div>
 				</div>
 			</div>

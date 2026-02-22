@@ -4,6 +4,9 @@
 	import Catalog from '$lib/components/catalog.svelte';
 	import HeroCaroussel from '$lib/components/heroCaroussel.svelte';
 	import HeroCarousselSkeleton from '$lib/components/skeletons/heroCaroussel.svelte';
+	import { library } from '$lib/stremio/store/library';
+	import CatalogSkeleton from '$lib/components/skeletons/catalog.svelte';
+	import { Bookmark } from 'lucide-svelte';
 
 	let sentinel: HTMLElement;
 	let observer: IntersectionObserver;
@@ -19,6 +22,7 @@
 	onMount(() => {
 		board.initialLoad();
 		loadMore();
+		library.load(null);
 		observer = new IntersectionObserver(
 			(entries) => {
 				const first = entries[0];
@@ -49,9 +53,28 @@
 		<HeroCarousselSkeleton />
 	{/if}
 
+	{#if $library.catalog}
+		<Catalog
+			catalog={$library.catalog.slice(0, 10)}
+			name="Watch Later"
+			type={null}
+			icon={Bookmark}
+		/>
+	{/if}
 	{#each $board.catalogs as catalog, i}
 		{#if i !== heroIndex}
-			<Catalog {catalog} />
+			{#if catalog?.content}
+				{#if catalog.content.type === 'Loading'}
+					<CatalogSkeleton />
+				{:else if catalog.content.type === 'Ready'}
+					<Catalog
+						catalog={catalog.content.content}
+						name={catalog.name}
+						type={catalog.type}
+						addon={catalog.addon}
+					/>
+				{/if}
+			{/if}
 		{/if}
 	{/each}
 

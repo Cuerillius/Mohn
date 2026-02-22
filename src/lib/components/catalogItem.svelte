@@ -3,8 +3,13 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import Image from '$lib/components/image.svelte';
+	import { library } from '$lib/stremio/store/library';
+	import { goto } from '$app/navigation';
+	import { auth } from '$lib/stremio/store/auth';
 
 	let { entry }: { entry: DiscoverItem } = $props();
+
+	let id = $derived(entry.id ? entry.id : entry._id);
 
 	let type = $derived(entry.type.charAt(0).toLocaleUpperCase() + entry.type.slice(1));
 	let releaseInfo = $derived(
@@ -20,8 +25,8 @@
 	<div
 		class="pointer-events-none absolute top-1/2 left-1/2 z-40 h-full w-[250%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-background opacity-0 blur-3xl transition-opacity delay-150 duration-300 group-hover:opacity-100"
 	></div>
-	<a
-		href="/meta/{entry.type}/{entry.id}"
+	<button
+		onclick={() => goto(`/meta/${entry.type}/${id}`)}
 		class="pointer-events-none absolute top-1/2 left-1/2 z-50 flex h-96 w-84 -translate-x-1/2 -translate-y-1/2 scale-95 flex-col rounded-lg border border-accent bg-background opacity-0 shadow-2xl transition-all delay-0 duration-300 group-hover:pointer-events-auto group-hover:scale-100 group-hover:opacity-100 group-hover:delay-150"
 	>
 		<div class="relative">
@@ -30,9 +35,10 @@
 					><BadgeCheck class="h-4" />Watched</Badge
 				>
 			{/if}
+
 			<Image class="aspect-3/2 rounded-t-lg" src={entry.background} alt={entry.name} />
 			<p
-				class="warp-break-words absolute right-0 bottom-0 left-0 z-10 line-clamp-3 px-4 pb-2 text-xl font-bold"
+				class="warp-break-words absolute right-0 bottom-0 left-0 z-10 line-clamp-3 px-4 pb-2 text-left text-xl font-bold"
 			>
 				{entry.name}
 			</p>
@@ -52,13 +58,21 @@
 				{/if}
 			{/each}
 		</div>
-		<p class=" wrap-break-words line-clamp-5 px-4 pt-2 text-sm text-gray-500">
+		<p class="wrap-break-words line-clamp-5 px-4 pt-2 text-left text-sm text-gray-500">
 			{entry.description}
 		</p>
 		<div class="flex-1"></div>
 		<div class="flex gap-2 p-4 pt-3">
 			<Button>Details</Button>
-			<Button variant="outline" size="icon"><Bookmark /></Button>
+			<Button
+				disabled={!$auth.isLoggedIn}
+				variant="outline"
+				size="icon"
+				onclick={(e) => {
+					e.stopPropagation();
+					entry.inLibrary ? library.removeFromLibrary(id) : library.addToLibrary(entry);
+				}}><Bookmark fill={entry.inLibrary ? 'currentColor' : 'none'} /></Button
+			>
 			<div class="flex w-full flex-col items-center justify-center text-sm text-gray-500">
 				<div class="flex">
 					<p>
@@ -73,12 +87,17 @@
 				</div>
 			</div>
 		</div>
-	</a>
+	</button>
 	<div class="relative w-48 shrink-0">
-		<a href="/meta/{entry.type}/{entry.id}">
+		<a href="/meta/{entry.type}/{id}">
 			{#if entry.watched}
 				<Badge variant="outline" class="absolute top-2 right-2 backdrop-blur-lg"
 					><BadgeCheck class="h-4" />Watched</Badge
+				>
+			{/if}
+			{#if entry.inLibrary}
+				<Badge variant="outline" class="absolute top-2 left-2 h-7 backdrop-blur-lg"
+					><Bookmark class="h-4" fill="currentColor" /></Badge
 				>
 			{/if}
 			<Image
