@@ -2,11 +2,11 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
-import { APIError } from 'better-auth/api';
+import { APIError, signInSocial } from 'better-auth/api';
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) {
-		return redirect(302, '/demo/better-auth');
+		return redirect(302, '/profiles');
 	}
 	return {};
 };
@@ -32,7 +32,7 @@ export const actions: Actions = {
 			return fail(500, { message: 'Unexpected error' });
 		}
 
-		return redirect(302, '/demo/better-auth');
+		return redirect(302, '/profiles');
 	},
 	signUpEmail: async (event) => {
 		const formData = await event.request.formData();
@@ -56,6 +56,26 @@ export const actions: Actions = {
 			return fail(500, { message: 'Unexpected error' });
 		}
 
-		return redirect(302, '/demo/better-auth');
+		return redirect(302, '/profiles');
+	},signInSocial: async (event) => {
+		const formData = await event.request.formData();
+		const provider = formData.get('provider')?.toString() ?? '';
+		
+		try {
+			await auth.api.signInSocial({
+				body: {
+					provider,
+										callbackURL: '/auth/verification-success'
+
+				}
+			});
+		} catch (error) {
+			if (error instanceof APIError) {
+				return fail(400, { message: error.message || 'Signin failed' });
+			}
+			return fail(500, { message: 'Unexpected error' });
+		}
+
+		return redirect(302, '/profiles');
 	}
 };

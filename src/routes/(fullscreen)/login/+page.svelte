@@ -38,5 +38,11 @@
 		class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
 		>Register</button
 	>
+	<input type="hidden" name="provider" value="google" />
+	<button
+		formaction="?/signInSocial"
+		class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+		>Sign in with Google</button
+	>
 </form>
 <p class="text-red-500">{form?.message ?? ''}</p>
