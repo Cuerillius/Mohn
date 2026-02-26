@@ -1,5 +1,5 @@
+import type { TorboxClient } from '$lib/server/torbox';
 import type { User, Session } from 'better-auth/minimal';
-
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
@@ -12,8 +12,9 @@ declare global {
 		}
 
 		interface Locals {
-			user?: User;
-			session?: Session;
+			user: User | null;
+			session: Session | null;
+			torbox: TorboxClient | null;
 		}
 
 		// interface Error {}

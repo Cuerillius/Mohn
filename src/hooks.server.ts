@@ -1,22 +1,41 @@
+// src/hooks.server.ts
 import { redirect, type Handle } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
+import { createTorboxClient } from '$lib/server/torbox';
+import { sequence } from '@sveltejs/kit/hooks';
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
-	const session = await auth.api.getSession({ headers: event.request.headers });
-
-	if (session) {
-		event.locals.session = session.session;
-		event.locals.user = session.user;
-	}
-
-	const isProtectedRoute = event.url.pathname.startsWith('/') && !event.url.pathname.startsWith('/login');
-
-	if (!session && isProtectedRoute) {
-        throw redirect(302, '/login');
-    }
 	return svelteKitHandler({ event, resolve, auth, building });
 };
 
-export const handle: Handle = handleBetterAuth;
+const guardRoutes: Handle = async ({ event, resolve }) => {
+	const session = await auth.api.getSession({ headers: event.request.headers });
+
+	if (session) {
+		event.locals.user = session.user;
+		event.locals.session = session.session;
+		event.locals.torbox = createTorboxClient(session.user.id);
+	} else {
+		event.locals.user = null;
+		event.locals.session = null;
+		event.locals.torbox = null;
+	}
+
+	const pathname = event.url.pathname;
+	const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+	const isProtectedRoute = pathname.startsWith('/profiles') || pathname.startsWith('/settings');
+
+	if (!session && isProtectedRoute) {
+		throw redirect(302, `/login?redirectTo=${encodeURIComponent(pathname)}`);
+	}
+
+	if (session && isAuthPage) {
+		throw redirect(302, '/');
+	}
+
+	return resolve(event);
+};
+
+export const handle: Handle = sequence(handleBetterAuth, guardRoutes);

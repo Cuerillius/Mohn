@@ -2,13 +2,14 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import type { PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth';
-import { APIError, signInSocial } from 'better-auth/api';
+import { APIError } from 'better-auth/api';
 
 export const load: PageServerLoad = async (event) => {
+	const next = event.url.searchParams.get('redirectTo') || '/profiles';
 	if (event.locals.user) {
-		return redirect(302, '/profiles');
+		return redirect(302, next);
 	}
-	return {};
+	return { next };
 };
 
 export const actions: Actions = {
@@ -16,13 +17,14 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const email = formData.get('email')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
+		const next = event.url.searchParams.get('redirectTo') || '/profiles';
 
 		try {
 			await auth.api.signInEmail({
 				body: {
 					email,
 					password,
-					callbackURL: '/auth/verification-success'
+					callbackURL: next
 				}
 			});
 		} catch (error) {
@@ -31,14 +33,13 @@ export const actions: Actions = {
 			}
 			return fail(500, { message: 'Unexpected error' });
 		}
-
-		return redirect(302, '/profiles');
 	},
 	signUpEmail: async (event) => {
 		const formData = await event.request.formData();
 		const email = formData.get('email')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
 		const name = formData.get('name')?.toString() ?? '';
+		const next = event.url.searchParams.get('redirectTo') || '/profiles';
 
 		try {
 			await auth.api.signUpEmail({
@@ -46,7 +47,7 @@ export const actions: Actions = {
 					email,
 					password,
 					name,
-					callbackURL: '/auth/verification-success'
+					callbackURL: next
 				}
 			});
 		} catch (error) {
@@ -55,18 +56,15 @@ export const actions: Actions = {
 			}
 			return fail(500, { message: 'Unexpected error' });
 		}
-
-		return redirect(302, '/profiles');
-	},signInSocial: async (event) => {
-		const formData = await event.request.formData();
-		const provider = formData.get('provider')?.toString() ?? '';
-		
+	},
+	signInGoogle: async (event) => {
+		const next = event.url.searchParams.get('redirectTo') || '/profiles';
+		let result = null;
 		try {
-			await auth.api.signInSocial({
+			result = await auth.api.signInSocial({
 				body: {
-					provider,
-										callbackURL: '/auth/verification-success'
-
+					provider: 'google',
+					callbackURL: next
 				}
 			});
 		} catch (error) {
@@ -75,7 +73,8 @@ export const actions: Actions = {
 			}
 			return fail(500, { message: 'Unexpected error' });
 		}
-
-		return redirect(302, '/profiles');
+		if (result.url) {
+			return redirect(302, result.url);
+		}
 	}
 };
