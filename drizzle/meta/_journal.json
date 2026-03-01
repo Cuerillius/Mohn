@@ -8,6 +8,13 @@
       "when": 1772031195947,
       "tag": "0000_rich_bushwacker",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772181169122,
+      "tag": "0001_narrow_squadron_supreme",
+      "breakpoints": true
     }
   ]
 }

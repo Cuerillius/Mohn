@@ -10,14 +10,13 @@ export const auth = betterAuth({
 	baseURL: env.ORIGIN,
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg' }),
-	databaseHooks:{
-		user:{
+	databaseHooks: {
+		user: {
 			create: {
-				after: async ( user ) => {
+				after: async (user) => {
 					await db.insert(profile).values({
 						name: user.name,
-						userId: user.id,
-						id: crypto.randomUUID(),
+						userId: user.id
 					});
 				}
 			}

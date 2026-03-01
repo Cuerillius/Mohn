@@ -6,8 +6,7 @@
 	let { form }: { form: ActionData } = $props();
 </script>
 
-<h1>Login</h1>
-<form method="post" action="?/signInEmail&{page.url.searchParams.toString()}" use:enhance>
+<form method="post" use:enhance>
 	<label>
 		Email
 		<input
@@ -24,13 +23,22 @@
 			class="mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 		/>
 	</label>
-	<button class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
-		>Login</button
+	<label>
+		Name
+		<input
+			name="name"
+			class="mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+		/>
+	</label>
+	<button
+		formaction="?/signUpEmail&{page.url.searchParams.toString()}"
+		class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+		>Register</button
 	>
 	<button
 		formaction="?/signInGoogle&{page.url.searchParams.toString()}"
 		class="rounded-md bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
-		>Login with Google</button
+		>Sign in with Google</button
 	>
 </form>
 <p class="text-red-500">{form?.message ?? ''}</p>

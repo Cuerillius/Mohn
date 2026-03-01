@@ -13,23 +13,24 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
-	signInEmail: async (event) => {
+	signUpEmail: async (event) => {
 		const formData = await event.request.formData();
 		const email = formData.get('email')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
+		const name = formData.get('name')?.toString() ?? '';
 		const next = event.url.searchParams.get('redirectTo') || '/profiles';
-
 		try {
-			await auth.api.signInEmail({
+			await auth.api.signUpEmail({
 				body: {
 					email,
 					password,
+					name,
 					callbackURL: next
 				}
 			});
 		} catch (error) {
 			if (error instanceof APIError) {
-				return fail(400, { message: error.message || 'Signin failed' });
+				return fail(400, { message: error.message || 'Registration failed' });
 			}
 			return fail(500, { message: 'Unexpected error' });
 		}
@@ -37,7 +38,6 @@ export const actions: Actions = {
 	signInGoogle: async (event) => {
 		const next = event.url.searchParams.get('redirectTo') || '/profiles';
 		let result = null;
-		console.log('Initiating Google sign-in with callback URL:', next);
 		try {
 			result = await auth.api.signInSocial({
 				body: {
