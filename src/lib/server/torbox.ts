@@ -7,6 +7,7 @@ import type {
 } from '$lib/types/torbox/search';
 import type { StreamDataResponse } from '$lib/types/torbox/stream';
 import type {
+	CachedAvailabilityResponse,
 	CreateTorrentResponse,
 	TorrentDataResponse,
 	TorrentListResponse
@@ -46,7 +47,11 @@ class TorboxBase {
 		return response.json() as Promise<T>;
 	}
 
-	protected async post<T>(endpoint: string, body?: object, options: RequestInit = {}): Promise<T> {
+	protected async postFormdata<T>(
+		endpoint: string,
+		body?: object,
+		options: RequestInit = {}
+	): Promise<T> {
 		if (!this.apiToken) {
 			throw error(401, 'Torbox API Token missing.');
 		}
@@ -79,6 +84,37 @@ class TorboxBase {
 
 		return response.json() as Promise<T>;
 	}
+
+	protected async postJson<T>(
+		endpoint: string,
+		body?: object,
+		options: RequestInit = {}
+	): Promise<T> {
+		if (!this.apiToken) {
+			throw error(401, 'Torbox API Token missing.');
+		}
+		const headers = {
+			Authorization: `Bearer ${this.apiToken}`,
+			'Content-Type': 'application/json',
+			...options.headers
+		};
+		const response = await fetch(`${this.baseUrl}${endpoint}`, {
+			method: 'POST',
+			headers,
+			body: body ? JSON.stringify(body) : undefined,
+			...options
+		});
+		if (!response.ok) {
+			const errData = await response.json().catch(() => ({}));
+			console.error(`Torbox API Error (${this.baseUrl}):`, errData);
+			throw error(
+				response.status,
+				`Provider Error: ${errData.detail || errData.message || response.statusText}`
+			);
+		}
+
+		return response.json() as Promise<T>;
+	}
 }
 
 class StreamService extends TorboxBase {
@@ -91,11 +127,14 @@ class StreamService extends TorboxBase {
 		file_id: number,
 		type: ResourceType,
 		chosenSubtitleIndex?: number,
-		chosenAudioIndex?: number
+		chosenAudioIndex?: number,
+		chosenResolutionIndex?: number
 	) {
 		let url = `/api/stream/createstream?id=${id}&file_id=${file_id}&type=${type}`;
 		if (chosenSubtitleIndex !== undefined) url += `&chosen_subtitle_index=${chosenSubtitleIndex}`;
 		if (chosenAudioIndex !== undefined) url += `&chosen_audio_index=${chosenAudioIndex}`;
+		if (chosenResolutionIndex !== undefined)
+			url += `&chosen_resolution_index=${chosenResolutionIndex}`;
 
 		return this.request<StreamDataResponse>(url);
 	}
@@ -103,11 +142,13 @@ class StreamService extends TorboxBase {
 	async getStreamData(
 		presignedToken: string,
 		chosenSubtitleIndex?: number,
-		chosenAudioIndex?: number
+		chosenAudioIndex?: number,
+		resolutionIndex?: number
 	) {
 		let url = `/api/stream/getstreamdata?presigned_token=${presignedToken}&token=${this.apiToken}`;
 		if (chosenSubtitleIndex !== undefined) url += `&chosen_subtitle_index=${chosenSubtitleIndex}`;
 		if (chosenAudioIndex !== undefined) url += `&chosen_audio_index=${chosenAudioIndex}`;
+		if (resolutionIndex !== undefined) url += `&chosen_resolution_index=${resolutionIndex}`;
 
 		return this.request<StreamDataResponse>(url);
 	}
@@ -119,8 +160,14 @@ class TorrentService extends TorboxBase {
 	}
 
 	async createTorrent(magnet: string) {
-		return this.post<CreateTorrentResponse>(`/api/torrents/createtorrent`, {
+		return this.postFormdata<CreateTorrentResponse>(`/api/torrents/createtorrent`, {
 			magnet: magnet
+		});
+	}
+
+	async createTorrentFromInfoHash(infoHash: string) {
+		return this.postFormdata<CreateTorrentResponse>(`/api/torrents/createtorrent`, {
+			magnet: `magnet:?xt=urn:btih:${infoHash}`
 		});
 	}
 
@@ -138,6 +185,52 @@ class TorrentService extends TorboxBase {
 		limit?: number;
 	}) {
 		let url = `/api/torrents/mylist`;
+		const params = new URLSearchParams();
+		if (bypassCache !== undefined) params.append('bypass_cache', String(bypassCache));
+		if (offset !== undefined) params.append('offset', String(offset));
+		if (limit !== undefined) params.append('limit', String(limit));
+		if (params.toString()) url += `?${params.toString()}`;
+		return this.request<TorrentListResponse>(url);
+	}
+
+	async checkCache(hashes: string[]) {
+		return this.postJson<CachedAvailabilityResponse>(`/api/torrents/checkcached?format=list`, {
+			hashes: hashes
+		});
+	}
+
+	async getTorrentInfo(hash: string) {
+		return this.request<TorrentDataResponse>(
+			`/api/torrents/torrentinfo?hash=${hash}&use_cache_lookup=true`
+		);
+	}
+}
+
+class UsenetService extends TorboxBase {
+	constructor(userId: string, apiToken: string) {
+		super(userId, apiToken, `https://api.torbox.app/v1`);
+	}
+
+	async createUsenet(link: string) {
+		return this.post<CreateTorrentResponse>(`/api/usenet/createusenet`, {
+			link: link
+		});
+	}
+
+	async getUsenetData(torrentId: string) {
+		return this.request<TorrentDataResponse>(`/api/usenet/mylist?id=${torrentId}`);
+	}
+
+	async getUsenetList({
+		bypassCache,
+		offset,
+		limit
+	}: {
+		bypassCache?: boolean;
+		offset?: number;
+		limit?: number;
+	}) {
+		let url = `/api/usenet/mylist`;
 		const params = new URLSearchParams();
 		if (bypassCache !== undefined) params.append('bypass_cache', String(bypassCache));
 		if (offset !== undefined) params.append('offset', String(offset));
@@ -199,16 +292,20 @@ class SearchService extends TorboxBase {
 }
 
 export class TorboxClient {
+	public usenet: UsenetService;
 	public torrents: TorrentService;
 	public stream: StreamService;
 	public search: SearchService;
 	protected apiToken?: string;
 
-	constructor(userId: string) {
-		this.apiToken = '';
+	constructor(userId: string, apiToken: string) {
+		this.apiToken = apiToken;
+		this.torrents = new TorrentService(userId, this.apiToken);
+		this.usenet = new UsenetService(userId, this.apiToken);
 		this.stream = new StreamService(userId, this.apiToken);
 		this.search = new SearchService(userId, this.apiToken);
 	}
 }
 
-export const createTorboxClient = (userId: string) => new TorboxClient(userId);
+export const createTorboxClient = (userId: string, apiToken: string) =>
+	new TorboxClient(userId, apiToken);

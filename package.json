@@ -46,6 +46,8 @@
 		"wrangler": "^4.63.0"
 	},
 	"dependencies": {
-		"postgres": "^3.4.8"
+		"hls.js": "^1.6.15",
+		"postgres": "^3.4.8",
+		"vidstack": "^1.12.13"
 	}
 }

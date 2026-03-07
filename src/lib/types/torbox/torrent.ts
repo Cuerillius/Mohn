@@ -73,3 +73,11 @@ export interface TorrentData {
 	alternative_hashes: string[];
 	tags: string[];
 }
+
+interface CachedAvailability {
+	name: string;
+	hash: string;
+	size: number;
+}
+
+export type CachedAvailabilityResponse = ApiResponse<CachedAvailability[]>;

@@ -1,9 +1,13 @@
+import { db } from '$lib/server/db';
+import { getStreams } from '$lib/server/db/addon';
 import { autoSelectVideoFile } from '$lib/server/utils/videoDetection';
+import type { AddonResults } from '$lib/types/addon';
+import { info } from 'console';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
-	let results = null;
-	let cacheResults = null;
+	let results: AddonResults[] = [];
+	let cacheResults: any[] = [];
 	if (event.locals.user && event.locals.torbox) {
 		const query = event.url.searchParams.get('q');
 
@@ -11,14 +15,25 @@ export const load: PageServerLoad = async (event) => {
 			return { results: [] };
 		}
 
+		const addons = await db.query.addons.findMany({
+			where: (addons, { eq }) => eq(addons.userId, event.locals.user.id)
+		});
+
 		const torbox = event.locals.torbox;
 
-		results = await torbox.search.findTorrentDataById(query, {
-			metadata: true
-		});
-		cacheResults = await torbox.torrents.checkCache(
-			results.data?.torrents?.map((item) => item.hash) || []
+		const allResults = await Promise.all(
+			addons.map(async (addon) => {
+				const addonResults = await getStreams(addon.manifest, 'movie', query);
+				const cache = await torbox.torrents.checkCache(
+					(Array.isArray(addonResults.streams)
+						? addonResults.streams.map((item) => item.infoHash)
+						: []) || []
+				);
+				return { addonResults, cache };
+			})
 		);
+		results = allResults.flatMap((item) => item.addonResults.streams);
+		cacheResults = allResults.flatMap((item) => item.cache.data.map((torrent) => torrent.hash));
 	}
 	return { results, isAutheticated: !!event.locals.user, cacheResults };
 };
@@ -26,14 +41,14 @@ export const load: PageServerLoad = async (event) => {
 export const actions: Actions = {
 	createTorrent: async (event) => {
 		const formData = await event.request.formData();
-		const magnet = formData.get('magnet')?.toString() ?? '';
+		const infoHash = formData.get('infoHash')?.toString() ?? '';
 
 		if (!event.locals.user || !event.locals.torbox) {
 			return { success: false, error: 'User not authenticated' };
 		}
 
 		const torbox = event.locals.torbox;
-		const res = await torbox.torrents.createTorrent(magnet);
+		const res = await torbox.torrents.createTorrentFromInfoHash(infoHash);
 
 		return { success: true, torrentId: res.data.torrent_id };
 	},

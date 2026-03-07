@@ -8,3 +8,5 @@ export const task = pgTable('task', {
 
 export * from './auth.schema';
 export * from './profiles.schema';
+export * from './addons.schema';
+export * from './settings.schema';

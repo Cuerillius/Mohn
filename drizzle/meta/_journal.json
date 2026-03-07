@@ -15,6 +15,13 @@
       "when": 1772181169122,
       "tag": "0001_narrow_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772786204675,
+      "tag": "0002_equal_anita_blake",
+      "breakpoints": true
     }
   ]
 }

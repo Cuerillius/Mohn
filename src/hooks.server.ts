@@ -5,6 +5,7 @@ import { auth } from '$lib/server/auth';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { createTorboxClient } from '$lib/server/torbox';
 import { sequence } from '@sveltejs/kit/hooks';
+import { db } from '$lib/server/db';
 
 const handleBetterAuth: Handle = async ({ event, resolve }) => {
 	return svelteKitHandler({ event, resolve, auth, building });
@@ -16,7 +17,12 @@ const guardRoutes: Handle = async ({ event, resolve }) => {
 	if (session) {
 		event.locals.user = session.user;
 		event.locals.session = session.session;
-		event.locals.torbox = createTorboxClient(session.user.id);
+		const userSetting = await db.query.setting.findFirst({
+			where: (setting, { eq }) => eq(setting.userId, event.locals.user.id)
+		});
+		if (userSetting?.torboxApiKey) {
+			event.locals.torbox = createTorboxClient(session.user.id, userSetting?.torboxApiKey);
+		}
 	} else {
 		event.locals.user = null;
 		event.locals.session = null;

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { enhance, deserialize } from '$app/forms';
+	import { goto } from '$app/navigation';
 	import type { ActionResult } from '@sveltejs/kit';
+	import 'vidstack/bundle';
 
 	let { data, form } = $props();
 
@@ -86,26 +88,35 @@
 {#if form?.stream}
 	<p>{form.stream.data.name}</p>
 	<input name="torrent_id" value={form.stream.data.id} />
-	<p>{JSON.stringify(form.stream, null, 2)}</p>
-	<p>is it the same?</p>
-	<p>{JSON.stringify(form.streamData, null, 2)}</p>
+	<media-player title={form.stream.data.name} src={form.streamData.data.hls_url}>
+		<media-provider></media-provider>
+	</media-player>
+
+	<button
+		onclick={() =>
+			goto(`/player?type=${'torrent'}&presigned_token=${form?.stream?.data?.presigned_token}`)}
+		>GO TO player</button
+	>
 {/if}
 
 <!-- Attach the handler to your main form -->
 <form method="post" use:enhance={handleCreateTorrent}>
 	{#if data.isAutheticated && data.results?.data && data.results.data.torrents}
-		{#each data.results.data.torrents as result}
+		{#each data.results.data.torrents as result (result.hash)}
 			<div class="border p-4">
 				{result.raw_title}
 				<button formaction="?/createTorrent" type="submit" name="magnet" value={result.magnet}>
 					Add to My Torrents
 				</button>
+				{#if data.cacheResults?.data && data.cacheResults.data.find((item) => item.hash === result.hash)}
+					<span class="ml-2 rounded bg-green-100 px-2 py-1 text-green-800">Cached</span>
+				{/if}
 			</div>
 		{/each}
 	{/if}
 
 	{#if data.isAutheticated && data.results?.data && data.results.data.nzbs}
-		{#each data.results.data.nzbs as result}
+		{#each data.results.data.nzbs as result (result.hash)}
 			<div class="mb-4 rounded border p-4">
 				{result.title}
 			</div>
