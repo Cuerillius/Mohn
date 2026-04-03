@@ -1,10 +1,14 @@
 <script lang="ts">
   import { Play, Info } from "lucide-svelte";
   import { goto } from "$app/navigation";
+
+  // Assuming you still have these components in your library
+  import Image from "$lib/components/image.svelte";
   import ImageVignete from "./imageVignete.svelte";
   import DetailBlock from "./detailBlock.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import type { Movie } from "tmdb-ts";
+  import Metadata from "./Metadata.svelte";
 
   let { movie }: { movie: Movie } = $props();
 </script>
@@ -24,7 +28,7 @@
             Note: You may need to adapt DetailBlock to accept a 'movie' 
             instead of an 'item'. 
         -->
-    <DetailBlock {movie} />
+    <Metadata {movie} />
 
     <div class="flex gap-4 mt-6">
       <Button

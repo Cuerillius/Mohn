@@ -20,6 +20,8 @@
     } from "@lucide/svelte";
     import type { Profile } from "$lib/api/profiles";
     import AvatarMarble from "$lib/components/AvatarMarbleBackground.svelte";
+    import { LogOut } from "lucide-svelte";
+    import { authClient } from "$lib/api/auth-client";
 
     const profiles = useProfiles();
     const createProfileMutation = useCreateProfile();
@@ -111,6 +113,11 @@
         [list[index], list[targetIndex]] = [list[targetIndex], list[index]];
         reorderProfilesMutation.mutate(list.map((p) => p.id));
     }
+
+    async function handleLogout() {
+        await authClient.signOut();
+        goto("/login");
+    }
 </script>
 
 <svelte:head>
@@ -121,6 +128,15 @@
     class="min-h-screen flex items-center justify-center bg-[var(--background)] p-8"
 >
     <div class="flex flex-col items-center gap-8 max-w-lg w-full">
+        <button
+            class="absolute top-8 right-8 flex items-center gap-2 px-3 py-2 text-sm text-[var(--muted-foreground)] hover:text-[var(--destructive)] hover:bg-[oklch(1_0_0_/_5%)] rounded-lg transition-all"
+            onclick={handleLogout}
+            title="Sign out"
+        >
+            <LogOut size={16} />
+            <span class="hidden sm:inline">Sign out</span>
+        </button>
+
         <!-- Header -->
         <div class="flex items-center gap-4 w-full">
             <button

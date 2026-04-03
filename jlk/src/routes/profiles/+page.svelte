@@ -24,9 +24,9 @@
 </script>
 
 <div
-    class="min-h-screen relative flex flex-col items-center justify-center bg-[var(--background)] p-8"
+    class="min-h-screen relative flex flex-col items-center bg-[var(--background)] p-8"
 >
-    <!-- Top Right Manage Button -->
+    <!-- Top Right Manage Button (Absolute stays) -->
     <a
         href="/profiles/settings"
         class="absolute top-8 right-8 p-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[oklch(1_0_0_/_5%)] rounded-lg transition-all"
@@ -36,13 +36,17 @@
         <Settings size={20} />
     </a>
 
-    <div class="flex flex-col items-center gap-12 max-w-4xl w-full">
+    <!-- Main Content Container -->
+    <div
+        class="flex flex-col items-center w-full max-w-4xl flex-1 justify-center"
+    >
+        <!-- Title is here, not inside the grid's flex flow -->
         <h1
-            class="text-[2.5rem] font-medium text-[var(--foreground)] tracking-tighter"
+            class="text-[2.5rem] font-medium text-[var(--foreground)] tracking-tighter mb-10"
         >
             Who's watching?
         </h1>
-
+        <!-- Profiles Grid -->
         {#if profiles.isPending}
             <div class="flex flex-wrap justify-center gap-8">
                 {#each Array(3) as _}
