@@ -7,12 +7,18 @@
     "nodejs_compat"
   ],
   "vars": {
-    "DATABASE_URL": "",
     "TMDB_API_TOKEN": "",
     "FRONTEND_URL": "",
     "BETTER_AUTH_URL": "",
     "BETTER_AUTH_SECRET": ""
   },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "0c2c3be8863f4c43ba58e4507b70dab3",
+      "localConnectionString": "postgres://user:password@localhost:5432/better_auth"
+    }
+  ]
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",

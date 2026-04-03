@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
-    "types": ["node","worker-configuration.d.ts"],
+    "types": [
+      "node",
+      "worker-configuration.d.ts"
+    ],
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Bundler",
