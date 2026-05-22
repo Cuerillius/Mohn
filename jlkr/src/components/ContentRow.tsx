@@ -89,24 +89,24 @@ export default function ContentRow({ title, items }: Props) {
 
   if (!items.length) {
     return (
-      <div className="row-section">
+      <div className="mb-7">
         {title && (
-          <div className="row-header">
-            <span className="row-header-title">{title}</span>
+          <div className="flex items-center px-12 mb-3 max-[900px]:px-5">
+            <span className="text-[13px] font-medium text-[#aaa] flex-1">{title}</span>
           </div>
         )}
-        <div className="row-outer">
-          <button className="row-arrow" disabled aria-label="Previous">
+        <div className="flex items-center">
+          <button className="row-arrow w-10 shrink-0 bg-transparent border-none text-[#555] cursor-default flex items-center justify-center p-0 opacity-20" disabled aria-label="Previous">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
           </button>
-          <div className="row-clip" ref={clipRef}>
-            <div className="row-track" ref={trackRef}>
+          <div className="overflow-hidden flex-1" ref={clipRef}>
+            <div className="flex" ref={trackRef}>
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="poster-skeleton poster" />
+                <div key={i} className="poster-skeleton poster bg-[#333] rounded-lg animate-pulse" />
               ))}
             </div>
           </div>
-          <button className="row-arrow" disabled aria-label="Next">
+          <button className="row-arrow w-10 shrink-0 bg-transparent border-none text-[#555] cursor-default flex items-center justify-center p-0 opacity-20" disabled aria-label="Next">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
@@ -115,22 +115,32 @@ export default function ContentRow({ title, items }: Props) {
   }
 
   return (
-    <div className="row-section">
+    <div className="mb-7">
       {title && (
-        <div className="row-header">
-          <span className="row-header-title">{title}</span>
+        <div className="flex items-center px-12 mb-3 max-[900px]:px-5">
+          <span className="text-[13px] font-medium text-[#aaa] flex-1">{title}</span>
         </div>
       )}
-      <div className="row-outer">
-        <button className="row-arrow" disabled={!btnState.left} onClick={goLeft} aria-label="Previous">
+      <div className="flex items-center">
+        <button
+          className={`row-arrow w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.left ? 'text-[#555] hover:text-white' : 'text-[#555] opacity-20 cursor-default'}`}
+          disabled={!btnState.left}
+          onClick={goLeft}
+          aria-label="Previous"
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div className="row-clip" ref={clipRef}>
-          <div className="row-track" ref={trackRef}>
+        <div className="overflow-hidden flex-1" ref={clipRef}>
+          <div className="flex" ref={trackRef}>
             {items.map(item => <Poster key={item.id} item={item} />)}
           </div>
         </div>
-        <button className="row-arrow" disabled={!btnState.right} onClick={goRight} aria-label="Next">
+        <button
+          className={`row-arrow w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.right ? 'text-[#555] hover:text-white' : 'text-[#555] opacity-20 cursor-default'}`}
+          disabled={!btnState.right}
+          onClick={goRight}
+          aria-label="Next"
+        >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
         </button>
       </div>
