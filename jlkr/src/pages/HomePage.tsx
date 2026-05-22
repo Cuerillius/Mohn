@@ -24,7 +24,7 @@ export default function HomePage() {
   return (
     <>
       <Hero items={heroItems} />
-      <div className="rows">
+      <div className="pt-2 pb-10">
         <ContentRow title="Trending this week" items={trending} />
         <ContentRow title="Popular Movies" items={movies} />
         <ContentRow title="Popular Series" items={tv} />

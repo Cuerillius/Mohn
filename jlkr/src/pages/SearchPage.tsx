@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNav } from '../context/NavContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { searchMulti, imgUrl, itemTitle } from '../services/tmdb';
 import type { TMDBItem } from '../types/tmdb';
 
@@ -10,7 +10,9 @@ function getPageSize() {
 }
 
 export default function SearchPage() {
-  const { searchQuery, navigate } = useNav();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('q') ?? '';
   const [results, setResults] = useState<TMDBItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -35,40 +37,40 @@ export default function SearchPage() {
   const ph = Math.round(pw * 1.5);
 
   return (
-    <div style={{ padding: '80px 48px 40px' }}>
-      <div className="search-results-label">
+    <div className="pt-20 px-12 pb-10 max-[900px]:px-5">
+      <div className="text-[13px] text-[#555] mb-5">
         {!q
           ? 'Type to search'
           : loading
           ? 'Searching…'
           : `${results.length} result${results.length !== 1 ? 's' : ''} for "${q}"`}
       </div>
-      <div className="search-grid">
+      <div className="flex flex-wrap gap-[10px]">
         {results.map(item => {
           const poster = imgUrl(item.poster_path, 'w342');
           const title = itemTitle(item);
-          const type = item.media_type === 'tv' ? 'series' : 'detail';
+          const path = item.media_type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`;
           return (
             <div
               key={item.id}
-              className="poster"
+              className="poster group shrink-0 rounded-lg cursor-pointer relative bg-[#2a2a2a] shadow-[inset_0_0_0_0px_rgba(255,255,255,0)] hover:shadow-[inset_0_0_0_2px_rgba(255,255,255,0.55)] transition-shadow duration-150"
               style={{ width: pw, height: ph }}
-              onClick={() => navigate(type, item.id)}
+              onClick={() => navigate(path)}
             >
               {poster ? (
-                <img src={poster} alt={title} loading="lazy" />
+                <img src={poster} alt={title} loading="lazy" className="w-full h-full object-cover block rounded-lg" />
               ) : (
-                <div className="poster-placeholder" style={{ background: '#1e2a3a' }}>
-                  <span className="poster-name">{title}</span>
+                <div className="w-full h-full flex items-end p-2 rounded-lg overflow-hidden" style={{ background: '#1e2a3a' }}>
+                  <span className="text-[9px] text-white/35 leading-[1.3]">{title}</span>
                 </div>
               )}
-              <div className="poster-overlay" />
+              <div className="absolute inset-0 rounded-lg bg-transparent group-hover:bg-black/20 transition-colors duration-150" />
             </div>
           );
         })}
       </div>
       {q && !loading && results.length === 0 && (
-        <div className="search-empty">No results found</div>
+        <div className="text-[14px] text-[#555] mt-10">No results found</div>
       )}
     </div>
   );
