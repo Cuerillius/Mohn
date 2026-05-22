@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-
+import { useProfile } from '../context/ProfileContext';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -8,8 +8,13 @@ export default function Navbar() {
   const [searchParams] = useSearchParams();
   const [isOpen, setIsOpen] = useState(() => !!searchParams.get('q'));
   const [query, setQuery] = useState(() => searchParams.get('q') ?? '');
+  const { profile, clearProfile } = useProfile();
 
-  const searchAllowed = location.pathname === '/' || location.pathname === '/search' || location.pathname.startsWith('/movie/') || location.pathname.startsWith('/tv/');
+  const searchAllowed =
+    location.pathname === '/' ||
+    location.pathname === '/search' ||
+    location.pathname.startsWith('/movie/') ||
+    location.pathname.startsWith('/tv/');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const openSearch = () => {
@@ -40,6 +45,15 @@ export default function Navbar() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  const handleProfileClick = () => {
+    clearProfile();
+    navigate('/profile');
+  };
+
+  const initials = profile?.name
+    ? profile.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
 
   return (
     <nav className="fixed top-[14px] left-1/2 -translate-x-1/2 z-[100] h-11 bg-[rgba(30,30,30,0.85)] backdrop-blur-md border-[0.5px] border-[#3a3a3a] rounded-full flex items-center pl-4 pr-2 gap-2 w-fit max-w-[calc(100vw-48px)] shadow-[0_2px_16px_rgba(0,0,0,0.4)]">
@@ -76,11 +90,12 @@ export default function Navbar() {
       )}
       <button
         className="w-8 h-8 rounded-full bg-transparent border-none text-[#555] cursor-pointer flex items-center justify-center transition-colors duration-150 shrink-0 hover:text-white hover:bg-white/[0.08]"
-        onClick={() => navigate('/profile')}
-        aria-label="Account"
+        onClick={handleProfileClick}
+        aria-label="Switch profile"
+        title={profile?.name ?? 'Profile'}
       >
         <div className="w-7 h-7 rounded-full bg-[#333] border-[0.5px] border-[#444] flex items-center justify-center text-[11px] font-medium text-[#aaa]">
-          JD
+          {initials}
         </div>
       </button>
     </nav>

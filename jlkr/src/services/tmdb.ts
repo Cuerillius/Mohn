@@ -1,15 +1,7 @@
 import type { TMDBItem, TMDBMovieDetail, TMDBTVDetail, TMDBSeason } from '../types/tmdb';
+import { apiGet } from './api';
 
-const BASE = 'https://api.themoviedb.org/3';
-const IMG  = 'https://image.tmdb.org/t/p';
-
-function headers(): HeadersInit {
-  const key = import.meta.env.VITE_TMDB_API_KEY as string | undefined;
-  if (!key || key === 'your_tmdb_read_access_token_here') {
-    throw new Error('VITE_TMDB_API_KEY is not set. Add your TMDB Read Access Token to .env');
-  }
-  return { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
-}
+const IMG = 'https://image.tmdb.org/t/p';
 
 export function imgUrl(path: string | null, size = 'w500'): string | null {
   return path ? `${IMG}/${size}${path}` : null;
@@ -31,9 +23,7 @@ export function formatRuntime(mins: number): string {
 }
 
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, { headers: headers() });
-  if (!res.ok) throw new Error(`TMDB ${res.status}: ${path}`);
-  return res.json() as Promise<T>;
+  return apiGet<T>(`/api/tmdb${path}`);
 }
 
 interface ListResponse { results: TMDBItem[] }

@@ -4,6 +4,7 @@ import ContentRow from '../components/ContentRow';
 import EpisodeRow from '../components/EpisodeRow';
 import { getTV, getTVSeason, getTVRecs, imgUrl, itemYear } from '../services/tmdb';
 import type { TMDBTVDetail, TMDBSeason, TMDBItem } from '../types/tmdb';
+import { useWatchlist } from '../hooks/useWatchlist';
 
 type Tab = 'details' | `season-${number}` | 'similar';
 
@@ -18,6 +19,7 @@ export default function SeriesDetailPage() {
   const [seasons, setSeasons] = useState<TMDBSeason[]>([]);
   const [recs, setRecs] = useState<TMDBItem[]>([]);
   const [tab, setTab] = useState<Tab>('details');
+  const { inList, toggle } = useWatchlist(id ?? '', 'tv');
 
   useEffect(() => {
     if (!id) return;
@@ -91,8 +93,11 @@ export default function SeriesDetailPage() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               Play S1 E1
             </button>
-            <button className="inline-flex items-center gap-[7px] bg-[#2a2a2a] text-[#aaa] text-[13px] font-normal py-[9px] px-5 rounded-lg border-none cursor-pointer transition-colors duration-150 hover:bg-[#333]">
-              + My list
+            <button
+              onClick={toggle}
+              className="inline-flex items-center gap-[7px] bg-[#2a2a2a] text-[#aaa] text-[13px] font-normal py-[9px] px-5 rounded-lg border-none cursor-pointer transition-colors duration-150 hover:bg-[#333]"
+            >
+              {inList ? '✓ In list' : '+ My list'}
             </button>
           </div>
         </div>

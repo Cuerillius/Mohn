@@ -1,0 +1,4 @@
+BETTER_AUTH_URL=http://localhost:8787
+BETTER_AUTH_SECRET=secret
+TMDB_API_TOKEN=tmdb_read_access_token
+FRONTEND_URL=http://localhost:5173,http://localhost:1420/

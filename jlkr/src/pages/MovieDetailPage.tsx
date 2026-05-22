@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ContentRow from '../components/ContentRow';
 import { getMovie, getMovieRecs, imgUrl, itemYear, formatRuntime } from '../services/tmdb';
 import type { TMDBMovieDetail, TMDBItem } from '../types/tmdb';
+import { useWatchlist } from '../hooks/useWatchlist';
 
 type Tab = 'details' | 'similar';
 
@@ -16,6 +17,7 @@ export default function MovieDetailPage() {
   const [movie, setMovie] = useState<TMDBMovieDetail | null>(null);
   const [recs, setRecs] = useState<TMDBItem[]>([]);
   const [tab, setTab] = useState<Tab>('details');
+  const { inList, toggle } = useWatchlist(id ?? '', 'movie');
 
   useEffect(() => {
     if (!id) return;
@@ -70,8 +72,11 @@ export default function MovieDetailPage() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               Play
             </button>
-            <button className="inline-flex items-center gap-[7px] bg-[#2a2a2a] text-[#aaa] text-[13px] font-normal py-[9px] px-5 rounded-lg border-none cursor-pointer transition-colors duration-150 hover:bg-[#333]">
-              + My list
+            <button
+              onClick={toggle}
+              className="inline-flex items-center gap-[7px] bg-[#2a2a2a] text-[#aaa] text-[13px] font-normal py-[9px] px-5 rounded-lg border-none cursor-pointer transition-colors duration-150 hover:bg-[#333]"
+            >
+              {inList ? '✓ In list' : '+ My list'}
             </button>
           </div>
         </div>
