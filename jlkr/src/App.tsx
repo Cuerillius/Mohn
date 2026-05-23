@@ -1,13 +1,21 @@
-import { MemoryRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { ProfileProvider } from './context/ProfileContext';
-import Navbar from './components/Navbar';
-import HomePage from './pages/HomePage';
-import SearchPage from './pages/SearchPage';
-import MovieDetailPage from './pages/MovieDetailPage';
-import SeriesDetailPage from './pages/SeriesDetailPage';
-import ProfilePage from './pages/ProfilePage';
-import LoginPage from './pages/LoginPage';
+import {
+  MemoryRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ProfileProvider } from "./context/ProfileContext";
+import { SettingsProvider } from "./context/SettingsContext";
+import Navbar from "./components/Navbar";
+import HomePage from "./pages/HomePage";
+import SearchPage from "./pages/SearchPage";
+import MovieDetailPage from "./pages/MovieDetailPage";
+import SeriesDetailPage from "./pages/SeriesDetailPage";
+import ProfilePage from "./pages/ProfilePage";
+import LoginPage from "./pages/LoginPage";
+import PlayerPage from "./pages/PlayerPage";
 
 function WithNavbar() {
   return (
@@ -21,13 +29,13 @@ function WithNavbar() {
 function RequireAuth() {
   const { user, loading } = useAuth();
   // While session check is in-flight, render blank to avoid flash
-  if (loading) return <div className="min-h-screen bg-[#1f1f1f]" />;
+  if (loading) return <div className="min-h-screen bg-[#0f0f0f]" />;
   if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
 
 function RequireProfile() {
-  const hasProfile = Boolean(localStorage.getItem('jlkr_profile'));
+  const hasProfile = Boolean(localStorage.getItem("jlkr_profile"));
   if (!hasProfile) return <Navigate to="/profile" replace />;
   return <Outlet />;
 }
@@ -51,6 +59,12 @@ function AppRoutes() {
             <Route path="/movie/:id" element={<MovieDetailPage />} />
             <Route path="/tv/:id" element={<SeriesDetailPage />} />
           </Route>
+          {/* Player — no navbar */}
+          <Route path="/play/:type/:id" element={<PlayerPage />} />
+          <Route
+            path="/play/:type/:id/:season/:episode"
+            element={<PlayerPage />}
+          />
         </Route>
       </Route>
 
@@ -64,9 +78,11 @@ export default function App() {
   return (
     <AuthProvider>
       <ProfileProvider>
-        <MemoryRouter>
-          <AppRoutes />
-        </MemoryRouter>
+        <SettingsProvider>
+          <MemoryRouter>
+            <AppRoutes />
+          </MemoryRouter>
+        </SettingsProvider>
       </ProfileProvider>
     </AuthProvider>
   );

@@ -68,6 +68,8 @@ export const watchHistory = pgTable("watch_history", {
 	mediaId: text("media_id").notNull(),
 	mediaType: text("media_type").notNull(),
 	watchedAt: timestamp("watched_at").notNull(),
+	position: integer("position").notNull().default(0),
+	duration: integer("duration").notNull().default(0),
 });
 
 export const watchList = pgTable("watch_list", {
@@ -78,4 +80,11 @@ export const watchList = pgTable("watch_list", {
 	mediaId: text("media_id").notNull(),
 	mediaType: text("media_type").notNull(),
 	createdAt: timestamp("created_at").notNull(),
+});
+
+export const userSettings = pgTable("user_settings", {
+	userId: text("user_id").primaryKey().references(() => user.id),
+	torboxKey: text("torbox_key").notNull().default(''),
+	addonUrls: text("addon_urls").notNull().default('[]'),
+	updatedAt: timestamp("updated_at").notNull(),
 });

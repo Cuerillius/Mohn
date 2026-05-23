@@ -1,105 +1,145 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { signIn, signUp } from '../lib/authClient';
-import { useAuth } from '../context/AuthContext';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { signIn, signUp } from "../lib/authClient";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setUser } = useAuth();
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     try {
-      if (mode === 'signin') {
+      if (mode === "signin") {
         const { data, error: err } = await signIn.email({ email, password });
         if (err || !data?.user) {
-          setError(err?.message ?? 'Sign in failed');
+          setError(err?.message ?? "Sign in failed");
           return;
         }
-        setUser({ id: data.user.id, email: data.user.email, name: data.user.name });
+        setUser({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+        });
       } else {
-        const { data, error: err } = await signUp.email({ email, password, name });
+        const { data, error: err } = await signUp.email({
+          email,
+          password,
+          name,
+        });
         if (err || !data?.user) {
-          setError(err?.message ?? 'Sign up failed');
+          setError(err?.message ?? "Sign up failed");
           return;
         }
-        setUser({ id: data.user.id, email: data.user.email, name: data.user.name });
+        setUser({
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+        });
       }
-      navigate('/profile');
+      navigate("/profile");
     } catch {
-      setError('Network error — is the gatekeeper running?');
+      setError("Network error — please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-8 bg-[#1f1f1f]">
-      <div className="w-full max-w-[360px]">
-        <div className="text-center mb-10">
-          <span className="text-[15px] font-semibold text-white tracking-[0.1em]">JLKR</span>
+    <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a] text-white font-sans">
+      <div className="w-full max-w-[380px] px-6">
+        {/* Logo & Header */}
+        <div className="flex flex-col items-center mb-10">
+          <h1 className="text-[24px] font-semibold tracking-tight">
+            {mode === "signin" ? "Login" : "Sign Up"}
+          </h1>
         </div>
-        <h1 className="text-[22px] font-normal text-white mb-8 text-center">
-          {mode === 'signin' ? 'Sign in' : 'Create account'}
-        </h1>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {mode === 'signup' && (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          {mode === "signup" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-semibold text-zinc-400 ml-1">
+                Name
+              </label>
+              <input
+                className="bg-transparent border border-zinc-800 rounded-lg px-4 py-2.5 text-[14px] focus:border-zinc-500 outline-none transition-all"
+                type="text"
+                placeholder="Your Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-zinc-400 ml-1">
+              Email
+            </label>
             <input
-              className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg px-4 py-3 text-[13px] text-white placeholder:text-[#555] outline-none focus:border-[#555] transition-colors"
-              type="text"
-              placeholder="Name"
-              value={name}
-              onChange={e => setName(e.target.value)}
+              className="bg-transparent border border-zinc-800 rounded-lg px-4 py-2.5 text-[14px] focus:border-zinc-500 outline-none transition-all"
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="name"
             />
-          )}
-          <input
-            className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg px-4 py-3 text-[13px] text-white placeholder:text-[#555] outline-none focus:border-[#555] transition-colors"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-          <input
-            className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg px-4 py-3 text-[13px] text-white placeholder:text-[#555] outline-none focus:border-[#555] transition-colors"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-          />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[13px] font-semibold text-zinc-400 ml-1">
+              Password
+            </label>
+            <input
+              className="bg-transparent border border-zinc-800 rounded-lg px-4 py-2.5 text-[14px] focus:border-zinc-500 outline-none transition-all"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
           {error && (
-            <p className="text-[12px] text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-[12px] text-red-400 mt-1 text-center bg-red-400/5 py-2 rounded">
+              {error}
+            </p>
           )}
+
           <button
             type="submit"
             disabled={loading}
-            className="bg-white text-black text-[13px] font-medium py-3 rounded-lg cursor-pointer disabled:opacity-50 transition-opacity hover:opacity-90 mt-1"
+            className="w-full bg-white text-black font-bold text-[14px] py-3 rounded-lg mt-2 hover:bg-zinc-200 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+            {loading
+              ? "Please wait..."
+              : mode === "signin"
+                ? "Login"
+                : "Sign up"}
           </button>
         </form>
 
-        <p className="text-center text-[13px] text-[#555] mt-6">
-          {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+        {/* Footer Link */}
+        <p className="text-center text-[13px] text-zinc-500 mt-10">
+          {mode === "signin"
+            ? "Need an account? "
+            : "Already have an account? "}
           <button
-            className="text-white bg-transparent border-none cursor-pointer underline underline-offset-2"
-            onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
+            onClick={() => {
+              setMode(mode === "signin" ? "signup" : "signin");
+              setError("");
+            }}
+            className="text-white font-semibold hover:underline"
           >
-            {mode === 'signin' ? 'Sign up' : 'Sign in'}
+            {mode === "signin" ? "Sign up" : "Login"}
           </button>
         </p>
       </div>
