@@ -16,7 +16,8 @@
         "width": 1280,
         "height": 800,
         "minWidth": 800,
-        "minHeight": 540
+        "minHeight": 540,
+        "transparent": true
       }
     ],
     "security": {
@@ -32,6 +33,7 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": ["lib/**/*"]
   }
 }

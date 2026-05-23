@@ -74,3 +74,12 @@ export async function getTVRecs(id: number): Promise<TMDBItem[]> {
   const data = await get<ListResponse>(`/tv/${id}/recommendations`);
   return data.results.map(m => ({ ...m, media_type: 'tv' as const }));
 }
+
+export interface TMDBExternalIds {
+  imdb_id: string | null;
+  tvdb_id?: number | null;
+}
+
+export async function getExternalIds(tmdbId: number, type: 'movie' | 'tv'): Promise<TMDBExternalIds> {
+  return get<TMDBExternalIds>(`/${type}/${tmdbId}/external_ids`);
+}

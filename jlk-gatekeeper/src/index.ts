@@ -29,6 +29,53 @@ app.all('/api/auth/*', (c) => {
   return auth(c.env).handler(c.req.raw)
 })
 
+// ── TorBox proxy ─────────────────────────────────────────────────────────────
+app.all('/api/torbox/*', async (c) => {
+  console.log('[torbox proxy]', c.req.method, c.req.path)
+  const session = await auth(c.env).api.getSession({ headers: c.req.raw.headers })
+  if (!session) { console.log('[torbox proxy] no session'); return c.json({ error: 'Unauthorized' }, 401) }
+
+  const db = getDB(c.env)
+  const [settings] = await db
+    .select()
+    .from(schema.userSettings)
+    .where(eq(schema.userSettings.userId, session.user.id))
+    .limit(1)
+
+  const apiKey = settings?.torboxKey
+  if (!apiKey) { console.log('[torbox proxy] no api key for user', session.user.id); return c.json({ error: 'TorBox API key not configured' }, 400) }
+
+  const torboxPath = c.req.path.replace('/api/torbox', '')
+  const url = new URL(`https://api.torbox.app/v1/api${torboxPath}`)
+
+  const originUrl = new URL(c.req.raw.url)
+  originUrl.searchParams.forEach((value, key) => url.searchParams.set(key, value))
+
+  if (torboxPath.startsWith('/torrents/requestdl')) {
+    url.searchParams.set('token', apiKey)
+  }
+
+  const fetchHeaders: Record<string, string> = { 'Authorization': `Bearer ${apiKey}` }
+  const contentType = c.req.header('content-type')
+  if (contentType) fetchHeaders['content-type'] = contentType
+
+  const fetchOptions: RequestInit = { method: c.req.method, headers: fetchHeaders }
+  if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
+    fetchOptions.body = await c.req.raw.clone().arrayBuffer() as BodyInit
+  }
+
+  console.log('[torbox proxy] forwarding to', url.toString())
+  try {
+    const response = await fetch(url.toString(), fetchOptions)
+    console.log('[torbox proxy] upstream status', response.status)
+    const data = await response.json()
+    return c.json(data, response.status as any)
+  } catch (err) {
+    console.error('[torbox proxy] fetch error', err)
+    return c.json({ error: String(err) }, 502)
+  }
+})
+
 // ── TMDB proxy ────────────────────────────────────────────────────────────────
 app.all('/api/tmdb/*', async (c) => {
   const session = await auth(c.env).api.getSession({
@@ -274,6 +321,74 @@ const routes = app
     },
   )
 
+  // ─ Progress (position / duration) ────────────────────────────────────────
+  .get('/api/profiles/:profileId/history/progress', async (c) => {
+    const session = await getSession(c)
+    if (!session) return c.json({ error: 'Unauthorized' }, 401)
+
+    const profileId = c.req.param('profileId')
+    const profile = await verifyOwnership(c, profileId, session.user.id)
+    if (!profile) return c.json({ error: 'Profile not found' }, 404)
+
+    const mediaId = c.req.query('mediaId')
+    if (!mediaId) return c.json({ error: 'mediaId query param required' }, 400)
+
+    const db = getDB(c.env)
+    const [entry] = await db
+      .select({ position: schema.watchHistory.position, duration: schema.watchHistory.duration })
+      .from(schema.watchHistory)
+      .where(and(eq(schema.watchHistory.profileId, profileId), eq(schema.watchHistory.mediaId, mediaId)))
+      .limit(1)
+
+    return c.json({ position: entry?.position ?? 0, duration: entry?.duration ?? 0 })
+  })
+
+  .patch(
+    '/api/profiles/:profileId/history/progress',
+    zValidator('json', z.object({
+      mediaId: z.string(),
+      mediaType: z.string(),
+      position: z.number().int().min(0),
+      duration: z.number().int().min(0),
+    })),
+    async (c) => {
+      const session = await getSession(c)
+      if (!session) return c.json({ error: 'Unauthorized' }, 401)
+
+      const profileId = c.req.param('profileId')
+      const profile = await verifyOwnership(c, profileId, session.user.id)
+      if (!profile) return c.json({ error: 'Profile not found' }, 404)
+
+      const { mediaId, mediaType, position, duration } = c.req.valid('json')
+      const db = getDB(c.env)
+
+      const [existing] = await db
+        .select()
+        .from(schema.watchHistory)
+        .where(and(eq(schema.watchHistory.profileId, profileId), eq(schema.watchHistory.mediaId, mediaId)))
+        .limit(1)
+
+      if (existing) {
+        await db
+          .update(schema.watchHistory)
+          .set({ position, duration, watchedAt: new Date() })
+          .where(and(eq(schema.watchHistory.profileId, profileId), eq(schema.watchHistory.mediaId, mediaId)))
+      } else {
+        await db.insert(schema.watchHistory).values({
+          id: crypto.randomUUID(),
+          profileId,
+          mediaId,
+          mediaType,
+          position,
+          duration,
+          watchedAt: new Date(),
+        })
+      }
+
+      return c.json({ message: 'Progress saved' })
+    },
+  )
+
   // ─ Watchlist ──────────────────────────────────────────────────────────────
   .get('/api/profiles/:profileId/watchlist', async (c) => {
     const session = await getSession(c)
@@ -344,6 +459,84 @@ const routes = app
 
     return c.json({ message: 'Removed from watchlist' })
   })
+
+  // ─ User settings ──────────────────────────────────────────────────────────
+  .get('/api/settings', async (c) => {
+    const session = await getSession(c)
+    if (!session) return c.json({ error: 'Unauthorized' }, 401)
+    console.log('[GET /api/settings] user', session.user.id)
+
+    const db = getDB(c.env)
+    try {
+      const [existing] = await db
+        .select()
+        .from(schema.userSettings)
+        .where(eq(schema.userSettings.userId, session.user.id))
+        .limit(1)
+
+      if (!existing) {
+        console.log('[GET /api/settings] creating default row')
+        const [created] = await db
+          .insert(schema.userSettings)
+          .values({ userId: session.user.id, torboxKey: '', addonUrls: '[]', updatedAt: new Date() })
+          .returning()
+        return c.json({ torboxKey: created.torboxKey, addonUrls: JSON.parse(created.addonUrls) as string[] })
+      }
+
+      return c.json({ torboxKey: existing.torboxKey, addonUrls: JSON.parse(existing.addonUrls) as string[] })
+    } catch (err) {
+      console.error('[GET /api/settings] error', err)
+      return c.json({ error: String(err) }, 500)
+    }
+  })
+
+  .patch(
+    '/api/settings',
+    zValidator('json', z.object({
+      torboxKey: z.string().optional(),
+      addonUrls: z.array(z.string()).optional(),
+    })),
+    async (c) => {
+      const session = await getSession(c)
+      if (!session) return c.json({ error: 'Unauthorized' }, 401)
+
+      const body = c.req.valid('json')
+      console.log('[PATCH /api/settings] user', session.user.id, 'body keys', Object.keys(body))
+      const db = getDB(c.env)
+
+      const now = new Date()
+      const insertValues = {
+        userId: session.user.id,
+        torboxKey: body.torboxKey ?? '',
+        addonUrls: body.addonUrls ? JSON.stringify(body.addonUrls) : '[]',
+        updatedAt: now,
+      }
+
+      try {
+        const [existing] = await db
+          .select()
+          .from(schema.userSettings)
+          .where(eq(schema.userSettings.userId, session.user.id))
+          .limit(1)
+
+        if (existing) {
+          console.log('[PATCH /api/settings] updating existing row')
+          const set: Record<string, unknown> = { updatedAt: now }
+          if (body.torboxKey !== undefined) set.torboxKey = body.torboxKey
+          if (body.addonUrls !== undefined) set.addonUrls = JSON.stringify(body.addonUrls)
+          await db.update(schema.userSettings).set(set).where(eq(schema.userSettings.userId, session.user.id))
+        } else {
+          console.log('[PATCH /api/settings] inserting new row')
+          await db.insert(schema.userSettings).values(insertValues)
+        }
+
+        return c.json({ message: 'Settings updated' })
+      } catch (err) {
+        console.error('[PATCH /api/settings] error', err)
+        return c.json({ error: String(err) }, 500)
+      }
+    },
+  )
 
 export type AppType = typeof routes
 export default routes
