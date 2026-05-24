@@ -381,7 +381,7 @@ export default function PlayerPage() {
     episode?: string;
   }>();
   const navigate = useNavigate();
-  const { addonUrls, loading: settingsLoading } = useSettings();
+  const { addonUrls, activeAddonUrls, loading: settingsLoading } = useSettings();
   const { profile } = useProfile();
 
   // Stable media ID used as the DB key for progress tracking
@@ -541,8 +541,8 @@ export default function PlayerPage() {
           );
         });
 
-        if (addonUrls.length === 0)
-          throw new Error("Add addon URLs in Settings first");
+        if (activeAddonUrls.length === 0)
+          throw new Error("No active addons — enable at least one in Settings");
 
         setLoadStep("fetching IMDB id");
         const { imdb_id } = await getExternalIds(
@@ -556,7 +556,7 @@ export default function PlayerPage() {
           type === "tv" ? `${imdb_id}:${season ?? 1}:${episode ?? 1}` : imdb_id;
         setLoadStep(`fetching streams (${streamId})`);
         const raw = await fetchAllStreams(
-          addonUrls,
+          activeAddonUrls,
           type === "tv" ? "series" : "movie",
           streamId,
         );
@@ -729,7 +729,7 @@ export default function PlayerPage() {
         <span className="text-[13px] text-white/40">{loadStep}</span>
         <span className="text-[10px] text-white/25">
           {type}/{id} · settings {settingsLoading ? "loading" : "ready"} ·{" "}
-          {addonUrls.length} addons
+          {activeAddonUrls.length}/{addonUrls.length} addons active
         </span>
       </div>
     );

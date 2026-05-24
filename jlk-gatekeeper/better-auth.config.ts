@@ -9,6 +9,8 @@ const {
   BETTER_AUTH_URL,
   BETTER_AUTH_SECRET,
   FRONTEND_URL,
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
 } = process.env;
 
 const connectionString = HYPERDRIVE_CONNECTION_STRING;
@@ -30,5 +32,11 @@ export const auth = betterAuth({
   ].filter(Boolean) as string[],
   emailAndPassword: {
     enabled: true,
+  },
+  socialProviders: {
+    google: {
+      clientId: GOOGLE_CLIENT_ID!,
+      clientSecret: GOOGLE_CLIENT_SECRET!,
+    },
   },
 });

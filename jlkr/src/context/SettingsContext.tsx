@@ -8,6 +8,9 @@ interface SettingsContextValue {
   addonUrls: string[];
   addAddonUrl: (url: string) => void;
   removeAddonUrl: (url: string) => void;
+  inactiveAddonUrls: string[];
+  toggleAddonUrl: (url: string) => void;
+  activeAddonUrls: string[];
   loading: boolean;
 }
 
@@ -17,13 +20,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [torboxKey, setTorboxKeyState] = useState('');
   const [addonUrls, setAddonUrls] = useState<string[]>([]);
+  const [inactiveAddonUrls, setInactiveAddonUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    apiGet<{ torboxKey: string; addonUrls: string[] }>('/api/settings')
-      .then((s) => { setTorboxKeyState(s.torboxKey); setAddonUrls(s.addonUrls); })
+    apiGet<{ torboxKey: string; addonUrls: string[]; inactiveAddonUrls: string[] }>('/api/settings')
+      .then((s) => {
+        setTorboxKeyState(s.torboxKey);
+        setAddonUrls(s.addonUrls);
+        setInactiveAddonUrls(s.inactiveAddonUrls ?? []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [user?.id]);
@@ -47,10 +55,33 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       apiPatch('/api/settings', { addonUrls: next }).catch(() => {});
       return next;
     });
+    // also remove from inactive if present
+    setInactiveAddonUrls((prev) => {
+      const next = prev.filter((u) => u !== url);
+      apiPatch('/api/settings', { inactiveAddonUrls: next }).catch(() => {});
+      return next;
+    });
   };
 
+  const toggleAddonUrl = (url: string) => {
+    setInactiveAddonUrls((prev) => {
+      const next = prev.includes(url)
+        ? prev.filter((u) => u !== url)
+        : [...prev, url];
+      apiPatch('/api/settings', { inactiveAddonUrls: next }).catch(() => {});
+      return next;
+    });
+  };
+
+  const activeAddonUrls = addonUrls.filter((u) => !inactiveAddonUrls.includes(u));
+
   return (
-    <SettingsContext.Provider value={{ torboxKey, setTorboxKey, addonUrls, addAddonUrl, removeAddonUrl, loading }}>
+    <SettingsContext.Provider value={{
+      torboxKey, setTorboxKey,
+      addonUrls, addAddonUrl, removeAddonUrl,
+      inactiveAddonUrls, toggleAddonUrl, activeAddonUrls,
+      loading,
+    }}>
       {children}
     </SettingsContext.Provider>
   );

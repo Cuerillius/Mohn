@@ -1,18 +1,21 @@
-import { useRef, useState, useEffect } from 'react';
-import Poster from './Poster';
-import type { TMDBItem } from '../types/tmdb';
+import { useRef, useState, useEffect } from "react";
+import Poster from "./Poster";
+import type { TMDBItem } from "../types/tmdb";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Skeleton } from "./ui/skeleton";
 
 interface Props {
   title: string;
   items: TMDBItem[];
 }
 
-const STEP = 4;
+const GAP = 10;
+const POSTER_MIN_W = 130;
+const MAX_PAGE = 10;
 
-function getPageSize() {
-  if (window.innerWidth <= 540) return 2;
-  if (window.innerWidth <= 900) return 4;
-  return 8;
+function computePage(clipW: number): number {
+  const page = Math.floor((clipW + GAP) / (POSTER_MIN_W + GAP));
+  return Math.max(2, Math.min(page, MAX_PAGE));
 }
 
 export default function ContentRow({ title, items }: Props) {
@@ -28,120 +31,119 @@ export default function ContentRow({ title, items }: Props) {
     if (!clip || !track) return;
 
     const TOTAL = items.length;
-    const PAGE = getPageSize();
-    const clipW = clip.clientWidth || (window.innerWidth - 80);
-    const GAP = 10;
+    const clipW = clip.clientWidth || window.innerWidth - 80;
+    const PAGE = computePage(clipW);
+
     const pw = Math.floor((clipW - (PAGE - 1) * GAP) / PAGE);
     const ph = Math.round(pw * 1.5);
 
-    const maxPage = Math.max(0, Math.ceil(TOTAL / STEP) - 1);
+    const maxPage = Math.max(0, Math.ceil(TOTAL / PAGE) - 1);
     pageIdxRef.current = Math.min(pageIdxRef.current, maxPage);
     const idx = pageIdxRef.current;
 
-    track.querySelectorAll<HTMLElement>('.poster').forEach(p => {
-      p.style.width = pw + 'px';
-      p.style.height = ph + 'px';
+    track.querySelectorAll<HTMLElement>(".poster").forEach((p) => {
+      p.style.width = pw + "px";
+      p.style.height = ph + "px";
     });
-    track.querySelectorAll<HTMLElement>('.poster-skeleton').forEach(p => {
-      p.style.width = pw + 'px';
-      p.style.height = ph + 'px';
+    track.querySelectorAll<HTMLElement>(".poster-skeleton").forEach((p) => {
+      p.style.width = pw + "px";
+      p.style.height = ph + "px";
     });
-    track.style.gap = GAP + 'px';
+    track.style.gap = GAP + "px";
 
     const totalTrackW = TOTAL * pw + (TOTAL - 1) * GAP;
     const maxOffset = Math.max(0, totalTrackW - clipW);
-    const rawOffset = idx * STEP * (pw + GAP);
+    const rawOffset = idx * PAGE * (pw + GAP);
     const offset = Math.min(rawOffset, maxOffset);
     track.style.transform = `translateX(-${offset}px)`;
 
-    document.querySelectorAll<HTMLElement>('.row-arrow').forEach(btn => {
-      btn.style.height = ph + 'px';
+    document.querySelectorAll<HTMLElement>(".row-arrow").forEach((btn) => {
+      btn.style.height = ph + "px";
     });
 
     setBtnState({ left: idx > 0, right: rawOffset < maxOffset });
   };
 
   useEffect(() => {
-    const handle = () => applySizeRef.current();
-    const timer = setTimeout(() => applySizeRef.current(), 0);
-    window.addEventListener('resize', handle);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', handle);
-    };
+    const clip = clipRef.current;
+    if (!clip) return;
+    const ro = new ResizeObserver(() => applySizeRef.current());
+    ro.observe(clip);
+    return () => ro.disconnect();
   }, []);
 
   useEffect(() => {
-    setTimeout(() => applySizeRef.current(), 0);
+    applySizeRef.current();
   }, [items.length]);
 
   const goLeft = () => {
-    if (pageIdxRef.current > 0) { pageIdxRef.current--; applySizeRef.current(); }
+    if (pageIdxRef.current > 0) {
+      pageIdxRef.current--;
+      applySizeRef.current();
+    }
   };
 
   const goRight = () => {
     const clip = clipRef.current;
     if (!clip) return;
     const TOTAL = items.length;
-    const maxPage = Math.max(0, Math.ceil(TOTAL / STEP) - 1);
-    if (pageIdxRef.current < maxPage) { pageIdxRef.current++; applySizeRef.current(); }
+    const clipW = clip.clientWidth || window.innerWidth - 80;
+    const PAGE = computePage(clipW);
+    const maxPage = Math.max(0, Math.ceil(TOTAL / PAGE) - 1);
+    if (pageIdxRef.current < maxPage) {
+      pageIdxRef.current++;
+      applySizeRef.current();
+    }
   };
-
-  if (!items.length) {
-    return (
-      <div className="mb-7">
-        {title && (
-          <div className="flex items-center px-12 mb-3 max-[900px]:px-5">
-            <span className="text-[13px] font-medium text-[#aaa] flex-1">{title}</span>
-          </div>
-        )}
-        <div className="flex items-center">
-          <button className="row-arrow w-10 shrink-0 bg-transparent border-none text-[#555] cursor-default flex items-center justify-center p-0 opacity-20" disabled aria-label="Previous">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-          <div className="overflow-hidden flex-1" ref={clipRef}>
-            <div className="flex" ref={trackRef}>
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="poster-skeleton poster bg-[#333] rounded-lg animate-pulse" />
-              ))}
-            </div>
-          </div>
-          <button className="row-arrow w-10 shrink-0 bg-transparent border-none text-[#555] cursor-default flex items-center justify-center p-0 opacity-20" disabled aria-label="Next">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="mb-7">
       {title && (
-        <div className="flex items-center px-12 mb-3 max-[900px]:px-5">
-          <span className="text-[13px] font-medium text-[#aaa] flex-1">{title}</span>
+        <div className="flex items-center px-12 mb-3">
+          <span className="text-sm font-medium text-white/50 flex-1">
+            {title}
+          </span>
         </div>
       )}
       <div className="flex items-center">
         <button
-          className={`row-arrow w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.left ? 'text-[#555] hover:text-white' : 'text-[#555] opacity-20 cursor-default'}`}
+          className={`row-arrow w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.left ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
           disabled={!btnState.left}
           onClick={goLeft}
           aria-label="Previous"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
+          <ChevronLeft />
         </button>
         <div className="overflow-hidden flex-1" ref={clipRef}>
-          <div className="flex" ref={trackRef}>
-            {items.map(item => <Poster key={item.id} item={item} />)}
+          <div
+            className="flex"
+            style={{ transition: "transform 0.3s ease" }}
+            ref={trackRef}
+          >
+            {items.length > 0 ? (
+              <>
+                {items.map((item) => (
+                  <Poster key={item.id} item={item} />
+                ))}
+              </>
+            ) : (
+              <>
+                {Array.from({ length: MAX_PAGE }).map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="poster-skeleton shrink-0 rounded-lg"
+                  />
+                ))}
+              </>
+            )}
           </div>
         </div>
         <button
-          className={`row-arrow w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.right ? 'text-[#555] hover:text-white' : 'text-[#555] opacity-20 cursor-default'}`}
+          className={`row-arrow w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.right ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
           disabled={!btnState.right}
           onClick={goRight}
           aria-label="Next"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
+          <ChevronRight />
         </button>
       </div>
     </div>

@@ -86,5 +86,6 @@ export const userSettings = pgTable("user_settings", {
 	userId: text("user_id").primaryKey().references(() => user.id),
 	torboxKey: text("torbox_key").notNull().default(''),
 	addonUrls: text("addon_urls").notNull().default('[]'),
+	inactiveAddonUrls: text("inactive_addon_urls").notNull().default('[]'),
 	updatedAt: timestamp("updated_at").notNull(),
 });

@@ -16,6 +16,8 @@ import SeriesDetailPage from "./pages/SeriesDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import PlayerPage from "./pages/PlayerPage";
+import ProfileSwitchPage from "./pages/ProfileSwitchPage";
+import SettingsPage from "./pages/SettingsPage";
 
 function WithNavbar() {
   return (
@@ -43,15 +45,12 @@ function RequireProfile() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Authenticated */}
       <Route element={<RequireAuth />}>
-        {/* Profile picker — auth required, no profile selection required */}
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile" element={<ProfileSwitchPage />} />
+        <Route path="settings" element={<SettingsPage />} />
 
-        {/* Main app — profile selection required */}
         <Route element={<RequireProfile />}>
           <Route element={<WithNavbar />}>
             <Route path="/" element={<HomePage />} />
@@ -59,7 +58,6 @@ function AppRoutes() {
             <Route path="/movie/:id" element={<MovieDetailPage />} />
             <Route path="/tv/:id" element={<SeriesDetailPage />} />
           </Route>
-          {/* Player — no navbar */}
           <Route path="/play/:type/:id" element={<PlayerPage />} />
           <Route
             path="/play/:type/:id/:season/:episode"
@@ -68,7 +66,6 @@ function AppRoutes() {
         </Route>
       </Route>
 
-      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

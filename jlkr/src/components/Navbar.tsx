@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useProfile } from "../context/ProfileContext";
+import Avatar from "./Avatar";
+import { Separator } from "./ui/separator";
+import { Delete, Search } from "lucide-react";
+import { Button } from "./ui/button";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -16,6 +20,22 @@ export default function Navbar() {
     location.pathname.startsWith("/movie/") ||
     location.pathname.startsWith("/tv/");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (query === (searchParams.get("q") ?? "")) return;
+
+    const handler = setTimeout(() => {
+      if (query.trim()) {
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`, {
+          replace: true,
+        });
+      } else if (location.pathname === "/search") {
+        navigate("/");
+      }
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [query, navigate, location.pathname, searchParams]);
 
   const openSearch = () => {
     setIsOpen(true);
@@ -38,7 +58,6 @@ export default function Navbar() {
     }
   };
 
-  // Logic to close when clicking outside if search is empty
   const handleBlur = () => {
     if (query.trim() === "") {
       setIsOpen(false);
@@ -58,41 +77,29 @@ export default function Navbar() {
     navigate("/profile");
   };
 
-  const initials = profile?.name
-    ? profile.name
-        .split(" ")
-        .map((w) => w[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
-    : "?";
-
   return (
-    <nav className="fixed top-[14px] left-1/2 -translate-x-1/2 z-[100] h-11 bg-[#0f0f0f] backdrop-blur-md border-[0.5px] border-[#3a3a3a] rounded-full flex items-center px-[6px] shadow-[0_2px_16px_rgba(0,0,0,0.4)] w-fit max-w-[calc(100vw-48px)]">
-      {/* Brand Logo */}
+    <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-100 bg-background border rounded-full flex items-center p-2">
       <button
-        className="flex items-center ml-2 mr-1 shrink-0 bg-transparent border-none cursor-pointer"
+        className="font-bold ml-2"
         onClick={() => navigate("/")}
         aria-label="Home"
       >
-        <img src="/icon.svg" alt="jlkr" className="h-6 w-auto brightness-0 invert" />
+        JLKR
       </button>
 
       {searchAllowed && (
         <>
-          {/* Vertical Divider */}
-          <div className="w-[1px] h-4 bg-[#3a3a3a] shrink-0" />
+          <Separator orientation="vertical" className="m-2" />
 
-          {/* Search Container */}
-          <div className="flex items-center ml-1">
+          <div className="flex items-center">
             <div
-              className={`overflow-hidden transition-[width] duration-[220ms] ease-in-out ${
-                isOpen ? "w-[200px] max-[540px]:w-[130px]" : "w-0"
+              className={`overflow-hidden transition-[width] duration-220 ease-in-out ${
+                isOpen ? "w-50 " : "w-0"
               }`}
             >
               <input
                 ref={inputRef}
-                className="w-full bg-transparent border-none py-[6px] px-2 text-[13px] text-white outline-none placeholder:text-[#555]"
+                className="w-full py-1.5 px-2 text-sm text-white outline-none placeholder:text-white/50"
                 type="text"
                 placeholder="Search..."
                 autoComplete="off"
@@ -101,39 +108,24 @@ export default function Navbar() {
                 onBlur={handleBlur}
               />
             </div>
-
-            <button
-              className="w-9 h-9 rounded-full bg-transparent border-none text-[#555] cursor-pointer flex items-center justify-center transition-colors duration-150 shrink-0 hover:text-white hover:bg-white/[0.08]"
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="text-white/50"
               onClick={isOpen ? closeSearch : openSearch}
-              aria-label="Search"
             >
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-            </button>
+              {isOpen ? <Delete /> : <Search />}
+            </Button>
           </div>
         </>
       )}
 
-      {/* Profile Button */}
       <button
-        className="ml-0.5 w-9 h-9 rounded-full bg-transparent border-none cursor-pointer flex items-center justify-center transition-colors duration-150 shrink-0 hover:bg-white/[0.08]"
+        className="shrink-0 ml-2 rounded-full ring-2 ring-transparent transition-all duration-150 hover:ring-white"
         onClick={handleProfileClick}
         aria-label="Switch profile"
       >
-        <div className="w-[30px] h-[30px] rounded-full bg-[#333] border-[0.5px] border-[#444] flex items-center justify-center text-[12px] font-semibold text-[#ccc] uppercase">
-          {initials}
-        </div>
+        <Avatar name={profile?.name ?? "?"} className="size-9 rounded-full" />
       </button>
     </nav>
   );
