@@ -11,6 +11,8 @@ declare namespace Cloudflare {
 		BETTER_AUTH_SECRET: string;
 		TMDB_API_TOKEN: string;
 		FRONTEND_URL: string;
+		GOOGLE_CLIENT_ID: string;
+		GOOGLE_CLIENT_SECRET: string;
 	}
 }
 interface CloudflareBindings extends Cloudflare.Env {}

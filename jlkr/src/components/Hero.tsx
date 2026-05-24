@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { imgUrl, itemTitle } from "../services/tmdb";
 import type { TMDBItem } from "../types/tmdb";
+import { ChevronLeft, ChevronRight, Info, Play } from "lucide-react";
+import { Button } from "./ui/button";
 
 const DURATION = 5500;
 
@@ -41,12 +43,10 @@ export default function Hero({ items }: Props) {
   }, [items.length, goTo]);
 
   if (!items.length)
-    return (
-      <div className="relative w-full overflow-hidden h-[calc(100vh-56px)] max-h-[680px] min-h-[420px]" />
-    );
+    return <div className="relative w-full overflow-hidden h-[80vh]" />;
 
   return (
-    <div className="relative w-full overflow-hidden h-[calc(100vh-56px)] max-h-[680px] min-h-[420px]">
+    <div className="relative w-full overflow-hidden h-[80vh]">
       <div
         className="flex h-full w-full"
         style={{ transform: `translateX(-${heroIdx * 100}%)` }}
@@ -54,53 +54,41 @@ export default function Hero({ items }: Props) {
         {items.map((item) => {
           const bg = imgUrl(item.backdrop_path, "original");
           const title = itemTitle(item);
-          const path =
-            item.media_type === "tv" ? `/tv/${item.id}` : `/movie/${item.id}`;
+          const path = `/${item.media_type}/${item.id}`;
           return (
             <div key={item.id} className="shrink-0 w-full h-full relative">
               <div
                 className="absolute inset-0 bg-cover bg-center"
-                style={
-                  bg
-                    ? { backgroundImage: `url(${bg})` }
-                    : { background: "#0f0f0f" }
-                }
+                style={bg ? { backgroundImage: `url(${bg})` } : undefined}
               />
               <div
                 className="absolute inset-0"
                 style={{
                   background:
-                    "linear-gradient(to right, rgba(15,15,15,0.95) 30%, rgba(15,15,15,0.5) 60%, rgba(15,15,15,0.15) 100%), linear-gradient(to top, rgba(15,15,15,1) 0%, transparent 40%)",
+                    "linear-gradient(to right,oklch(from var(--background) l c h / 0.75) 30%,oklch(from var(--background) l c h / 0.3) 60%,oklch(from var(--background) l c h / 0.05) 100%),linear-gradient(to top,var(--background) 0%,transparent 40%)",
                 }}
               />
-              <div className="absolute bottom-[60px] left-12 max-w-[420px] max-[900px]:left-6 max-[900px]:bottom-12 max-[900px]:max-w-[320px]">
-                <div className="text-[36px] font-medium text-white leading-[1.1] mb-3 max-[900px]:text-[26px] max-[540px]:text-[22px]">
+              <div className="absolute bottom-15 left-12 max-w-105">
+                <div className="text-4xl font-medium text-white mb-3">
                   {title}
                 </div>
-                <div className="text-[13px] text-[#aaa] leading-[1.6] mb-[22px] max-[540px]:hidden">
+                <div className="text-sm text-white/50 mb-5.5">
                   {item.overview}
                 </div>
-                <div className="flex gap-[10px] items-center">
-                  <button
-                    className="inline-flex items-center gap-[7px] bg-white text-black text-[13px] font-medium py-[9px] px-[22px] rounded-lg border-none cursor-pointer transition-opacity duration-150 hover:opacity-[0.88]"
+                <div className="flex gap-3 items-center">
+                  <Button
+                    className="p-5"
+                    onClick={() => navigate(`/play${path}`)}
+                  >
+                    <Play fill="currentColor" /> Play
+                  </Button>
+                  <Button
+                    className="p-5"
+                    variant="secondary"
                     onClick={() => navigate(path)}
                   >
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <polygon points="5 3 19 12 5 21 5 3" />
-                    </svg>
-                    Play
-                  </button>
-                  <button
-                    className="inline-flex items-center gap-[7px] bg-[#2a2a2a] text-[#aaa] text-[13px] font-normal py-[9px] px-5 rounded-lg border-none cursor-pointer transition-colors duration-150 hover:bg-[#333]"
-                    onClick={() => navigate(path)}
-                  >
-                    More info
-                  </button>
+                    <Info /> More info
+                  </Button>
                 </div>
               </div>
             </div>
@@ -108,36 +96,18 @@ export default function Hero({ items }: Props) {
         })}
       </div>
       <button
-        className="absolute top-1/2 -translate-y-1/2 left-4 w-9 h-9 rounded-full bg-[rgba(42,42,42,0.7)] border-[0.5px] border-[#3a3a3a] text-[#aaa] cursor-pointer flex items-center justify-center z-10 transition-colors duration-150 hover:bg-[#2a2a2a]"
+        className="absolute top-1/2 left-4 -translate-y-1/2 w-10 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 text-white/50 hover:text-white transition-colors duration-150"
         onClick={() => goTo(heroIdx - 1)}
         aria-label="Previous"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="m15 18-6-6 6-6" />
-        </svg>
+        <ChevronLeft />
       </button>
       <button
-        className="absolute top-1/2 -translate-y-1/2 right-4 w-9 h-9 rounded-full bg-[rgba(42,42,42,0.7)] border-[0.5px] border-[#3a3a3a] text-[#aaa] cursor-pointer flex items-center justify-center z-10 transition-colors duration-150 hover:bg-[#2a2a2a]"
+        className="absolute top-1/2 right-4 -translate-y-1/2 w-10 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 text-white/50 hover:text-white transition-colors duration-150"
         onClick={() => goTo(heroIdx + 1)}
         aria-label="Next"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="m9 18 6-6-6-6" />
-        </svg>
+        <ChevronRight />
       </button>
     </div>
   );

@@ -10,7 +10,9 @@
     "TMDB_API_TOKEN": "",
     "FRONTEND_URL": "",
     "BETTER_AUTH_URL": "",
-    "BETTER_AUTH_SECRET": ""
+    "BETTER_AUTH_SECRET": "",
+    "GOOGLE_CLIENT_ID": "",
+    "GOOGLE_CLIENT_SECRET": ""
   },
   "hyperdrive": [
     {

@@ -146,7 +146,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen py-20 px-8 bg-[#0f0f0f]">
+    <div className="relative flex flex-col items-center justify-center min-h-screen py-20 px-8 ">
       {/* Settings / Back button — top right */}
       <button
         className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center text-[#555] hover:text-white hover:bg-white/[0.08] transition-colors"
