@@ -26,9 +26,11 @@ export default function Navbar() {
 
     const handler = setTimeout(() => {
       if (query.trim()) {
-        navigate(`/search?q=${encodeURIComponent(query.trim())}`, {
-          replace: true,
-        });
+        if (location.pathname === "/" || location.pathname === "/search") {
+          navigate(`/search?q=${encodeURIComponent(query.trim())}`, {
+            replace: true,
+          });
+        }
       } else if (location.pathname === "/search") {
         navigate("/");
       }

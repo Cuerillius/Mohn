@@ -13,7 +13,6 @@ import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
 import MovieDetailPage from "./pages/MovieDetailPage";
 import SeriesDetailPage from "./pages/SeriesDetailPage";
-import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import PlayerPage from "./pages/PlayerPage";
 import ProfileSwitchPage from "./pages/ProfileSwitchPage";

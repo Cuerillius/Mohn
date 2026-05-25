@@ -72,7 +72,7 @@ export default function HomePage() {
   }, [profile]);
 
   return (
-    <>
+    <div className="scrollbar-none">
       <Hero items={heroItems} />
       <div className="pt-2 pb-10">
         {myList.length > 0 && <ContentRow title="My List" items={myList} />}
@@ -81,6 +81,6 @@ export default function HomePage() {
         <ContentRow title="Popular Series" items={tv} />
         <ContentRow title="New Arrivals" items={nowPlaying} />
       </div>
-    </>
+    </div>
   );
 }
