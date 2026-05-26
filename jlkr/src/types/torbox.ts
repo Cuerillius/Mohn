@@ -4,6 +4,7 @@ export interface AddonStream {
   infoHash?: string;
   fileIdx?: number;
   magnetLink?: string;
+  addonUrl?: string;
   behaviorHints?: {
     filename?: string;
     videoSize?: number;
@@ -18,6 +19,7 @@ export type Resolution = '4K' | '1080p' | '720p' | 'SD' | 'Unknown';
 
 export interface EnrichedStream extends AddonStream {
   parsedTitle: string;
+  rawName: string;
   resolution: Resolution;
   sizeBytes?: number;
   seeders?: number;

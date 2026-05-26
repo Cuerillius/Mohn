@@ -17,6 +17,10 @@ import {
   groupByResolution,
 } from "../services/addons";
 import { checkCached, createAndResolveLink } from "../services/torbox";
+import {
+  createStreamPlayer,
+  type StreamPlayerService,
+} from "../services/streamPlayer";
 import { useSettings } from "../context/SettingsContext";
 import { useProfile } from "../context/ProfileContext";
 import { apiGet, apiPatch } from "../services/api";
@@ -27,7 +31,8 @@ import PlayerControls, {
   type Section,
 } from "../components/PlayerControls";
 import MultiStepLoader from "@/components/MultiStepLoader";
-import { OctagonAlert } from "lucide-react";
+import StreamPicker from "@/components/StreamPicker";
+import { OctagonAlert, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const OBSERVED_PROPERTIES = [
@@ -68,19 +73,10 @@ function BackButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="absolute top-4 left-4 z-40 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 text-white/80 hover:bg-black/70 transition-colors cursor-pointer"
+      className="absolute top-4 left-4 z-40 w-9 h-9 flex items-center justify-center rounded-full bg-background/60 text-foreground/80 hover:bg-background/80 transition-colors cursor-pointer"
       aria-label="Back"
     >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      >
-        <path d="m15 18-6-6 6-6" />
-      </svg>
+      <ArrowLeft size={16} />
     </button>
   );
 }
@@ -140,6 +136,7 @@ export default function PlayerPage() {
     useState<string>("Unknown");
   const [resumeToast, setResumeToast] = useState("");
 
+  const streamPlayerRef = useRef<StreamPlayerService | null>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
   const uiTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const pausedRef = useRef(true);
@@ -227,6 +224,9 @@ export default function PlayerPage() {
 
     async function run() {
       try {
+        const streamPlayer = createStreamPlayer();
+        streamPlayerRef.current = streamPlayer;
+
         const mpvConfig: MpvConfig = {
           initialOptions: {
             vo: "gpu-next",
@@ -238,19 +238,23 @@ export default function PlayerPage() {
         };
 
         const p = profileRef.current;
-        const savedPosPromise = p
-          ? apiGet<{ position: number; duration: number }>(
-              `/api/profiles/${p.id}/history/progress?mediaId=${encodeURIComponent(progressMediaIdRef.current)}`,
-            ).catch(() => ({ position: 0, duration: 0 }))
-          : Promise.resolve({ position: 0, duration: 0 });
+        const savedPosPromise =
+          streamPlayer.supportsResume && p
+            ? apiGet<{ position: number; duration: number }>(
+                `/api/profiles/${p.id}/history/progress?mediaId=${encodeURIComponent(progressMediaIdRef.current)}`,
+              ).catch(() => ({ position: 0, duration: 0 }))
+            : Promise.resolve({ position: 0, duration: 0 });
 
-        const mpvPromise = init(mpvConfig).then(async () => {
-          if (cancelled) return;
-          unlistenRef.current = await observeProperties(
-            OBSERVED_PROPERTIES,
-            handleProperty,
-          );
-        });
+        const mpvPromise =
+          streamPlayer.type === "embedded"
+            ? init(mpvConfig).then(async () => {
+                if (cancelled) return;
+                unlistenRef.current = await observeProperties(
+                  OBSERVED_PROPERTIES,
+                  handleProperty,
+                );
+              })
+            : Promise.resolve();
 
         if (activeAddonUrls.length === 0)
           throw new Error(
@@ -323,15 +327,15 @@ export default function PlayerPage() {
         if (cancelled) return;
 
         const { position: savedPos } = await savedPosPromise;
-        if (savedPos > 30) {
-          await setProperty("options/start", String(Math.floor(savedPos)));
-          setResumeToast(`Resumed from ${formatTime(savedPos)}`);
+        const resumeAt =
+          streamPlayer.supportsResume && savedPos > 30 ? savedPos : undefined;
+        if (resumeAt !== undefined) {
+          setResumeToast(`Resumed from ${formatTime(resumeAt)}`);
           setTimeout(() => setResumeToast(""), 3000);
         }
-        await command("loadfile", [url]);
+        await streamPlayer.loadFile(url, resumeAt);
         setPaused(false);
         pausedRef.current = false;
-        await setProperty("options/start", "none");
       } catch (e) {
         if (!cancelled) {
           setLoadError(e instanceof Error ? e.message : String(e));
@@ -347,7 +351,7 @@ export default function PlayerPage() {
       clearTimeout(uiTimeoutRef.current);
       unlistenRef.current?.();
       saveProgress(timePosRef.current, durationRef.current);
-      destroy().catch(() => {});
+      if (streamPlayerRef.current?.type === "embedded") destroy().catch(() => {});
       if (isFullscreenRef.current) {
         isFullscreenRef.current = false;
         getCurrentWindow()
@@ -430,12 +434,13 @@ export default function PlayerPage() {
       const { url } = await createAndResolveLink(magnet, stream.fileIdx);
       setSelected(stream);
       setSelectedResolutionLabel(stream.resolution);
-      await setProperty(
-        "options/start",
-        String(Math.floor(timePosRef.current)),
-      );
-      await command("loadfile", [url]);
-      await setProperty("options/start", "none");
+      const sp = streamPlayerRef.current;
+      if (sp) {
+        await sp.loadFile(
+          url,
+          sp.supportsResume ? timePosRef.current : undefined,
+        );
+      }
     } catch (e) {
       setSwitchError(
         e instanceof Error ? e.message : "Failed to switch stream",
@@ -467,7 +472,7 @@ export default function PlayerPage() {
 
   if (loadState === "loading") {
     return (
-      <div className="relative w-full h-screen flex flex-col items-center justify-center gap-3">
+      <div className="relative w-full h-screen flex flex-col items-center justify-center gap-3 bg-background">
         <BackButton onClick={() => navigate(-1)} />
         <MultiStepLoader currentStep={currentStep} steps={LOADING_STEPS} />
       </div>
@@ -478,7 +483,7 @@ export default function PlayerPage() {
 
   if (loadState === "error") {
     return (
-      <div className="relative w-full h-screen flex flex-col items-center justify-center gap-4 px-8 text-center">
+      <div className="relative w-full h-screen flex flex-col items-center justify-center gap-4 px-8 text-center bg-background">
         <BackButton onClick={() => navigate(-1)} />
         <div className="flex flex-col items-center max-w-sm gap-4">
           <div className="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mb-2">
@@ -498,9 +503,24 @@ export default function PlayerPage() {
     );
   }
 
+  // ── External player: stream picker ─────────────────────────────────────
+
+  if (loadState === "ready" && streamPlayerRef.current?.type === "external") {
+    return (
+      <StreamPicker
+        streams={streams}
+        selected={selected}
+        switching={switching}
+        switchError={switchError}
+        onSelectStream={handleSelectStream}
+        onBack={() => navigate(-1)}
+      />
+    );
+  }
+
   // ── Player UI ───────────────────────────────────────────────────────────
 
-  const controlsVisible = showControls || paused;
+  const controlsVisible = showControls || paused || isBuffering;
 
   return (
     <div
