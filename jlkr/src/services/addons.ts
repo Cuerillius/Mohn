@@ -10,7 +10,7 @@ async function fetchAddonStreams(baseUrl: string, type: string, streamId: string
     if (!res.ok) return [];
     const data = await res.json() as AddonStreamResponse;
     console.log('[addons] got', data.streams?.length ?? 0, 'streams from', baseUrl);
-    return data.streams ?? [];
+    return (data.streams ?? []).map((s) => ({ ...s, addonUrl: baseUrl }));
   } catch (err) {
     console.error('[addons] error fetching', baseUrl, err);
     return [];
@@ -79,11 +79,21 @@ function parseSize(stream: AddonStream): number | undefined {
   return match[2].toUpperCase() === 'GB' ? num * 1024 * 1024 * 1024 : num * 1024 * 1024;
 }
 
+function extractRawName(stream: AddonStream): string {
+  // title field first line is typically the release name (e.g. Torrentio format)
+  const fromTitle = stream.title?.split('\n')[0]?.trim();
+  if (fromTitle && fromTitle.length > 5 && !fromTitle.startsWith('👤') && !fromTitle.startsWith('💾')) {
+    return fromTitle;
+  }
+  return stream.name?.split('\n')[0]?.trim() ?? stream.name ?? 'Unknown';
+}
+
 export function enrichStream(stream: AddonStream): EnrichedStream {
   const parsed = parseTorrentTitle(stream.name ?? '');
   return {
     ...stream,
     parsedTitle: (parsed as { title?: string }).title ?? stream.name ?? 'Unknown',
+    rawName: extractRawName(stream),
     resolution: mapResolution((parsed as { resolution?: string }).resolution),
     sizeBytes: parseSize(stream),
     seeders: parseSeeders(stream.title),

@@ -10,6 +10,8 @@ import {
   Minimize,
   Pause,
   Play,
+  RotateCcw,
+  RotateCw,
   Volume1,
   Volume2,
   VolumeOff,
@@ -30,6 +32,113 @@ export interface MpvTrack {
 
 export type Section = "Subtitles" | "Audio" | "Quality" | "Source";
 export const SECTIONS: Section[] = ["Subtitles", "Audio", "Quality", "Source"];
+
+interface LangInfo {
+  flag?: string;
+  name: string;
+}
+const LANG_INFO: Record<string, LangInfo> = {
+  eng: { flag: "gb", name: "English" },
+  en: { flag: "gb", name: "English" },
+  spa: { flag: "es", name: "Spanish" },
+  es: { flag: "es", name: "Spanish" },
+  fra: { flag: "fr", name: "French" },
+  fre: { flag: "fr", name: "French" },
+  fr: { flag: "fr", name: "French" },
+  deu: { flag: "de", name: "German" },
+  ger: { flag: "de", name: "German" },
+  de: { flag: "de", name: "German" },
+  jpn: { flag: "jp", name: "Japanese" },
+  ja: { flag: "jp", name: "Japanese" },
+  por: { flag: "pt", name: "Portuguese" },
+  pt: { flag: "pt", name: "Portuguese" },
+  ita: { flag: "it", name: "Italian" },
+  it: { flag: "it", name: "Italian" },
+  rus: { flag: "ru", name: "Russian" },
+  ru: { flag: "ru", name: "Russian" },
+  zho: { flag: "cn", name: "Chinese" },
+  chi: { flag: "cn", name: "Chinese" },
+  zh: { flag: "cn", name: "Chinese" },
+  kor: { flag: "kr", name: "Korean" },
+  ko: { flag: "kr", name: "Korean" },
+  ara: { flag: "sa", name: "Arabic" },
+  ar: { flag: "sa", name: "Arabic" },
+  nld: { flag: "nl", name: "Dutch" },
+  dut: { flag: "nl", name: "Dutch" },
+  nl: { flag: "nl", name: "Dutch" },
+  pol: { flag: "pl", name: "Polish" },
+  pl: { flag: "pl", name: "Polish" },
+  tur: { flag: "tr", name: "Turkish" },
+  tr: { flag: "tr", name: "Turkish" },
+  swe: { flag: "se", name: "Swedish" },
+  sv: { flag: "se", name: "Swedish" },
+  nor: { flag: "no", name: "Norwegian" },
+  no: { flag: "no", name: "Norwegian" },
+  fin: { flag: "fi", name: "Finnish" },
+  fi: { flag: "fi", name: "Finnish" },
+  dan: { flag: "dk", name: "Danish" },
+  da: { flag: "dk", name: "Danish" },
+  ces: { flag: "cz", name: "Czech" },
+  cze: { flag: "cz", name: "Czech" },
+  cs: { flag: "cz", name: "Czech" },
+  hun: { flag: "hu", name: "Hungarian" },
+  hu: { flag: "hu", name: "Hungarian" },
+  ukr: { flag: "ua", name: "Ukrainian" },
+  uk: { flag: "ua", name: "Ukrainian" },
+  vie: { flag: "vn", name: "Vietnamese" },
+  vi: { flag: "vn", name: "Vietnamese" },
+  tha: { flag: "th", name: "Thai" },
+  th: { flag: "th", name: "Thai" },
+  heb: { flag: "il", name: "Hebrew" },
+  he: { flag: "il", name: "Hebrew" },
+  ind: { flag: "id", name: "Indonesian" },
+  id: { flag: "id", name: "Indonesian" },
+  msa: { flag: "my", name: "Malay" },
+  may: { flag: "my", name: "Malay" },
+  ms: { flag: "my", name: "Malay" },
+  ron: { flag: "ro", name: "Romanian" },
+  rum: { flag: "ro", name: "Romanian" },
+  ro: { flag: "ro", name: "Romanian" },
+  hrv: { flag: "hr", name: "Croatian" },
+  hr: { flag: "hr", name: "Croatian" },
+  bul: { flag: "bg", name: "Bulgarian" },
+  bg: { flag: "bg", name: "Bulgarian" },
+  srp: { flag: "rs", name: "Serbian" },
+  sr: { flag: "rs", name: "Serbian" },
+  slk: { flag: "sk", name: "Slovak" },
+  slo: { flag: "sk", name: "Slovak" },
+  sk: { flag: "sk", name: "Slovak" },
+  hin: { flag: "in", name: "Hindi" },
+  hi: { flag: "in", name: "Hindi" },
+  cat: { flag: "es", name: "Catalan" },
+  ca: { flag: "es", name: "Catalan" },
+  grk: { flag: "gr", name: "Greek" },
+  ell: { flag: "gr", name: "Greek" },
+  el: { flag: "gr", name: "Greek" },
+};
+
+const _displayNames =
+  typeof Intl !== "undefined"
+    ? new Intl.DisplayNames(["en"], { type: "language" })
+    : null;
+
+function getLangInfo(lang: string | undefined): LangInfo | undefined {
+  if (!lang) return undefined;
+  const key = lang.toLowerCase();
+  if (LANG_INFO[key]) return LANG_INFO[key];
+  // fallback: try Intl for the display name, no flag
+  const name = _displayNames?.of(lang);
+  return name ? { name } : undefined;
+}
+
+function addonHostname(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
 
 const RESOLUTION_ORDER: Resolution[] = ["4K", "1080p", "720p", "SD", "Unknown"];
 
@@ -114,6 +223,68 @@ function Seekbar({
   );
 }
 
+function VolumeBar({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
+
+  function calcVolume(clientX: number) {
+    if (!barRef.current) return;
+    const rect = barRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    onChange(Math.round(pct * 100));
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    barRef.current?.setPointerCapture(e.pointerId);
+    draggingRef.current = true;
+    calcVolume(e.clientX);
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (draggingRef.current) calcVolume(e.clientX);
+  }
+  function onPointerUp(e: React.PointerEvent) {
+    if (draggingRef.current) {
+      draggingRef.current = false;
+      barRef.current?.releasePointerCapture(e.pointerId);
+    }
+  }
+
+  return (
+    <div
+      ref={barRef}
+      className="group relative flex h-6 w-24 cursor-pointer touch-none items-center select-none"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      role="slider"
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      tabIndex={0}
+    >
+      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/20">
+        <div
+          className="absolute h-full rounded-full bg-white transition-all duration-75 ease-out"
+          style={{ width: `${value}%` }}
+        />
+      </div>
+      <div
+        className="absolute h-3 w-3 rounded-full bg-white shadow ring-4 ring-white/20"
+        style={{ left: `${value}%`, transform: "translateX(-50%)" }}
+      />
+    </div>
+  );
+}
+
 export interface PlayerControlsProps {
   paused: boolean;
   isBuffering: boolean;
@@ -172,8 +343,11 @@ export default function PlayerControls({
   onFullscreen,
 }: PlayerControlsProps) {
   const groups = groupByResolution(streams);
-  const resolutionOptions = RESOLUTION_ORDER.filter((r) => groups[r].length > 0);
-  const currentResolutionStreams = groups[selectedResolutionLabel as Resolution] ?? [];
+  const resolutionOptions = RESOLUTION_ORDER.filter(
+    (r) => groups[r].length > 0,
+  );
+  const currentResolutionStreams =
+    groups[selectedResolutionLabel as Resolution] ?? [];
 
   return (
     <>
@@ -184,47 +358,50 @@ export default function PlayerControls({
 
       {/* Settings sidebar */}
       {isSettingsOpen && (
-        <div className="fixed right-0 top-0 bottom-0 w-90 h-full bg-[#111] border-l border-white/10 flex flex-col overflow-hidden z-50 shadow-2xl">
-          <div className="flex gap-2 p-2 shrink-0">
-            <div className="border border-white/10 rounded-lg gap-1 flex p-1 flex-1 overflow-x-auto hide-scrollbar">
-              {SECTIONS.map((section) => (
-                <button
-                  key={section}
-                  onClick={() => onSetActiveSection(section)}
-                  className={`px-2 py-1 rounded-md text-sm transition-colors cursor-pointer whitespace-nowrap ${
-                    activeSection === section
-                      ? "bg-white text-black font-medium"
-                      : "text-white/70 hover:bg-white/10"
-                  }`}
-                >
-                  {section}
-                </button>
-              ))}
-            </div>
-            <div className="border border-white/10 rounded-full flex items-center justify-center p-1 shrink-0">
+        <div className="fixed right-0 top-0 bottom-0 w-90 h-full bg-background border-l border-border flex flex-col overflow-hidden z-50 shadow-2xl">
+          {/* Tabs + close */}
+          <div className="flex items-center gap-1 px-3 py-2 border-b border-border shrink-0">
+            {SECTIONS.map((section) => (
               <button
-                onClick={onCloseSettings}
-                className="rounded-full p-1.5 hover:bg-white/10 transition-colors text-white cursor-pointer"
+                key={section}
+                onClick={() => onSetActiveSection(section)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                  activeSection === section
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
               >
-                <X className="h-5 w-5" />
+                {section}
               </button>
-            </div>
+            ))}
+            <button
+              onClick={onCloseSettings}
+              className="ml-auto p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
-          <div className="px-3 pb-3 flex-1 min-h-0 w-full overflow-y-auto hide-scrollbar">
+          {/* Content */}
+          <div className="px-3 py-3 flex-1 min-h-0 w-full overflow-y-auto hide-scrollbar">
             {activeSection === "Quality" && (
               <div className="flex flex-col gap-1 w-full">
                 {resolutionOptions.map((r) => (
                   <button
                     key={r}
                     onClick={() => onSelectResolution(r)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
                       selectedResolutionLabel === r
-                        ? "bg-white text-black font-medium"
-                        : "border border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
-                    {r === "Unknown" ? "Unknown" : r.toUpperCase()}
+                    <span>{r === "Unknown" ? "Unknown" : r}</span>
+                    <span
+                      className={`text-xs tabular-nums ${selectedResolutionLabel === r ? "opacity-70" : "text-muted-foreground"}`}
+                    >
+                      {groups[r].length}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -232,20 +409,42 @@ export default function PlayerControls({
 
             {activeSection === "Source" && (
               <div className="flex flex-col gap-1 w-full">
-                {currentResolutionStreams.map((stream) => (
-                  <button
-                    key={stream.infoHash}
-                    disabled={switching}
-                    onClick={() => onSelectStream(stream)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer whitespace-normal ${
-                      selected?.infoHash === stream.infoHash
-                        ? "bg-white text-black font-medium"
-                        : "border border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    {stream.parsedTitle || "Unknown Source"}
-                  </button>
-                ))}
+                {currentResolutionStreams.map((stream) => {
+                  const isSelected = selected?.infoHash === stream.infoHash;
+                  const hostname = addonHostname(stream.addonUrl);
+                  return (
+                    <button
+                      key={stream.infoHash}
+                      disabled={switching}
+                      onClick={() => onSelectStream(stream)}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "border border-border hover:bg-muted"
+                      }`}
+                    >
+                      <div
+                        className={`text-sm leading-snug break-all ${isSelected ? "" : "text-foreground"}`}
+                      >
+                        {stream.rawName || "Unknown Source"}
+                      </div>
+                      {(hostname || stream.cached) && (
+                        <div className="flex items-center justify-between mt-1 gap-2">
+                          <div
+                            className={`text-xs ${isSelected ? "opacity-60" : "text-muted-foreground"}`}
+                          >
+                            {hostname}
+                          </div>
+                          {stream.cached && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+                              cached
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -253,32 +452,50 @@ export default function PlayerControls({
               <>
                 <button
                   onClick={() => setProperty("sid", "no").catch(() => {})}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer mb-2 ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer mb-1 ${
                     currentSid === "no"
-                      ? "bg-white text-black font-medium"
-                      : "border border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   No Subtitles
                 </button>
                 <div className="flex flex-col gap-1">
-                  {subtitleTracks.map((track) => (
-                    <button
-                      key={track.id}
-                      onClick={() =>
-                        setProperty("sid", track.id.toString()).catch(() => {})
-                      }
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
-                        currentSid === track.id.toString()
-                          ? "bg-white text-black font-medium"
-                          : "border border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      {track.title || track.lang || `Subtitle ${track.id}`}
-                    </button>
-                  ))}
+                  {subtitleTracks.map((track) => {
+                    const info = getLangInfo(track.lang);
+                    const isActive = currentSid === track.id.toString();
+                    const label =
+                      track.title ||
+                      info?.name ||
+                      track.lang ||
+                      `Subtitle ${track.id}`;
+                    return (
+                      <button
+                        key={track.id}
+                        onClick={() =>
+                          setProperty("sid", track.id.toString()).catch(
+                            () => {},
+                          )
+                        }
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
+                          isActive
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        {info?.flag ? (
+                          <span
+                            className={`fi fi-${info.flag} rounded-xs shrink-0 text-base`}
+                          />
+                        ) : (
+                          <span className="w-5 h-4 shrink-0" />
+                        )}
+                        <span className="truncate">{label}</span>
+                      </button>
+                    );
+                  })}
                   {subtitleTracks.length === 0 && (
-                    <p className="text-[12px] text-white/40 px-1 py-2">
+                    <p className="text-xs text-muted-foreground px-1 py-2">
                       No subtitle tracks
                     </p>
                   )}
@@ -288,28 +505,46 @@ export default function PlayerControls({
 
             {activeSection === "Audio" && (
               <div className="flex flex-col gap-1">
-                {audioTracks.map((track) => (
-                  <button
-                    key={track.id}
-                    onClick={() =>
-                      setProperty("aid", track.id.toString()).catch(() => {})
-                    }
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
-                      currentAid === track.id.toString()
-                        ? "bg-white text-black font-medium"
-                        : "border border-white/20 text-white/70 hover:bg-white/10 hover:text-white"
-                    }`}
-                  >
-                    {track.title || track.lang || `Audio ${track.id}`}
-                    {track.codec && (
-                      <span className="ml-1 text-[10px] text-white/40">
-                        {track.codec}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {audioTracks.map((track) => {
+                  const info = getLangInfo(track.lang);
+                  const isActive = currentAid === track.id.toString();
+                  const label =
+                    track.title ||
+                    info?.name ||
+                    track.lang ||
+                    `Audio ${track.id}`;
+                  return (
+                    <button
+                      key={track.id}
+                      onClick={() =>
+                        setProperty("aid", track.id.toString()).catch(() => {})
+                      }
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
+                        isActive
+                          ? "bg-primary text-primary-foreground font-medium"
+                          : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      {info?.flag ? (
+                        <span
+                          className={`fi fi-${info.flag} rounded-xs shrink-0 text-base`}
+                        />
+                      ) : (
+                        <span className="w-5 h-4 shrink-0" />
+                      )}
+                      <span className="truncate flex-1">{label}</span>
+                      {track.codec && (
+                        <span
+                          className={`text-[10px] shrink-0 ${isActive ? "opacity-60" : "text-muted-foreground/60"}`}
+                        >
+                          {track.codec}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
                 {audioTracks.length === 0 && (
-                  <p className="text-[12px] text-white/40 px-1 py-2">
+                  <p className="text-xs text-muted-foreground px-1 py-2">
                     No audio tracks
                   </p>
                 )}
@@ -318,6 +553,51 @@ export default function PlayerControls({
           </div>
         </div>
       )}
+
+      {/* Center controls */}
+      <div
+        className={`absolute inset-0 z-30 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
+          controlsVisible ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <div className="flex items-center gap-10 pointer-events-auto">
+          <button
+            onClick={() => command("seek", ["-10", "relative"]).catch(() => {})}
+            className="relative flex items-center justify-center rounded-full p-3 transition-colors cursor-pointer text-white drop-shadow-lg"
+            aria-label="Rewind 10 seconds"
+          >
+            <RotateCcw className="h-10 w-10" />
+            <span className="absolute text-[10px] font-bold leading-none">
+              10
+            </span>
+          </button>
+
+          <button
+            onClick={() => command("cycle", ["pause"]).catch(() => {})}
+            className="rounded-full p-4 transition-colors text-white cursor-pointer drop-shadow-lg"
+            aria-label={paused ? "Play" : "Pause"}
+          >
+            {isBuffering && !paused ? (
+              <Loader className="h-16 w-16 animate-spin" />
+            ) : paused ? (
+              <Play fill="currentColor" className="h-16 w-16" />
+            ) : (
+              <Pause fill="currentColor" className="h-16 w-16" />
+            )}
+          </button>
+
+          <button
+            onClick={() => command("seek", ["10", "relative"]).catch(() => {})}
+            className="relative flex items-center justify-center rounded-full p-3 transition-colors cursor-pointer text-white drop-shadow-lg"
+            aria-label="Forward 10 seconds"
+          >
+            <RotateCw className="h-10 w-10" />
+            <span className="absolute text-[10px] font-bold leading-none">
+              10
+            </span>
+          </button>
+        </div>
+      </div>
 
       {/* Bottom controls */}
       <div
@@ -351,20 +631,6 @@ export default function PlayerControls({
 
           <div className="flex items-center justify-between text-white mt-4">
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => command("cycle", ["pause"]).catch(() => {})}
-                className="rounded-full p-2 transition-colors hover:bg-white/10 cursor-pointer"
-                aria-label={paused ? "Play" : "Pause"}
-              >
-                {isBuffering && !paused ? (
-                  <Loader className="h-6 w-6 animate-spin" />
-                ) : paused ? (
-                  <Play className="h-6 w-6" />
-                ) : (
-                  <Pause className="h-6 w-6" />
-                )}
-              </button>
-
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setProperty("mute", !muted).catch(() => {})}
@@ -380,20 +646,10 @@ export default function PlayerControls({
                   )}
                 </button>
 
-                <div className="w-24">
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    value={muted ? 0 : volume}
-                    onChange={(e) =>
-                      setProperty("volume", Number(e.target.value)).catch(
-                        () => {},
-                      )
-                    }
-                    className="w-full h-1 accent-white cursor-pointer"
-                  />
-                </div>
+                <VolumeBar
+                  value={volume}
+                  onChange={(v) => setProperty("volume", v).catch(() => {})}
+                />
               </div>
             </div>
 
@@ -437,7 +693,9 @@ export default function PlayerControls({
               <button
                 className="rounded-full p-2 transition-colors hover:bg-white/10 cursor-pointer"
                 onClick={onFullscreen}
-                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                aria-label={
+                  isFullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                }
               >
                 {isFullscreen ? (
                   <Minimize className="h-5 w-5" />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import ContentRow from "../components/ContentRow";
 import {
   getMovie,
@@ -17,7 +18,7 @@ const DETAIL_HERO_GRADIENT =
   "linear-gradient(to right, rgba(15,15,15,0.95) 30%, rgba(15,15,15,0.5) 60%, rgba(15,15,15,0.15) 100%), linear-gradient(to top, rgba(15,15,15,1) 0%, transparent 40%)";
 
 const backBtnCls =
-  "absolute top-5 left-12 z-10 w-9 h-9 rounded-full bg-[rgba(42,42,42,0.7)] border-[0.5px] border-[#3a3a3a] text-[#aaa] cursor-pointer flex items-center justify-center transition-colors duration-150 shrink-0 hover:bg-[#2a2a2a]";
+  "absolute top-5 left-12 z-10 w-9 h-9 rounded-full bg-background/70 border border-border text-muted-foreground cursor-pointer flex items-center justify-center transition-colors duration-150 shrink-0 hover:bg-muted hover:text-foreground";
 
 export default function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -58,16 +59,7 @@ export default function MovieDetailPage() {
             onClick={() => navigate(-1)}
             aria-label="Back"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
+            <ArrowLeft size={16} />
           </button>
         </div>
         <div className="px-12 pb-10 max-[900px]:px-5" />
@@ -113,16 +105,7 @@ export default function MovieDetailPage() {
           onClick={() => navigate(-1)}
           aria-label="Back"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
+          <ArrowLeft size={16} />
         </button>
         <div className="absolute bottom-9 left-12 right-12 max-[900px]:left-6 max-[900px]:right-6 max-[900px]:bottom-6">
           <div className="text-[36px] font-medium mb-[10px] leading-[1.1] max-[900px]:text-2xl">
