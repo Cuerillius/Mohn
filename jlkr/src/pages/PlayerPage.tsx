@@ -16,9 +16,21 @@ import {
   autoSelectStream,
   groupByResolution,
 } from "../services/addons";
-import { checkCached, createAndResolveLink } from "../services/torbox";
 import {
-  createStreamPlayer,
+  checkCached,
+  createAndResolveLink,
+  fetchTorboxPlan,
+  requestHlsLink,
+} from "../services/torbox";
+import {
+  isTauri,
+  isMobileBrowser,
+  isBrowserPlayable,
+  MpvStreamPlayer,
+  ExternalStreamPlayer,
+  BrowserVideoPlayer,
+  HlsStreamPlayer,
+  DesktopPromptPlayer,
   type StreamPlayerService,
 } from "../services/streamPlayer";
 import { useSettings } from "../context/SettingsContext";
@@ -31,8 +43,8 @@ import PlayerControls, {
   type Section,
 } from "../components/PlayerControls";
 import MultiStepLoader from "@/components/MultiStepLoader";
-import StreamPicker from "@/components/StreamPicker";
-import { OctagonAlert, ArrowLeft } from "lucide-react";
+import StreamPicker, { planFromNumber, type Plan, type Platform } from "@/components/StreamPicker";
+import { OctagonAlert, ArrowLeft, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const OBSERVED_PROPERTIES = [
@@ -50,24 +62,14 @@ const OBSERVED_PROPERTIES = [
 ] as const satisfies MpvObservableProperty[];
 
 const LOADING_STEPS = [
-  {
-    title: "Fetching media details",
-    description: "Retrieving metadata from TMDB",
-  },
-  {
-    title: "Getting torrents",
-    description: "Scraping all available providers",
-  },
+  { title: "Fetching media details", description: "Retrieving metadata from TMDB" },
+  { title: "Getting torrents", description: "Scraping all available providers" },
   { title: "Checking media cache", description: "Verifying Debrid cache" },
-  {
-    title: "Selecting stream",
-    description: "Choosing the optimal stream for you",
-  },
-  {
-    title: "Requesting media",
-    description: "Getting the stream from the Debrid service",
-  },
+  { title: "Selecting stream", description: "Choosing the optimal stream for you" },
+  { title: "Requesting media", description: "Getting the stream from the Debrid service" },
 ];
+
+type PlayerMode = "mpv" | "browser-video" | "hls" | "external" | "desktop-prompt" | null;
 
 function BackButton({ onClick }: { onClick: () => void }) {
   return (
@@ -101,11 +103,13 @@ export default function PlayerPage() {
   const progressMediaType = type === "tv" ? "tv" : "movie";
 
   // Load state
-  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [loadError, setLoadError] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Player mode
+  const [playerMode, setPlayerMode] = useState<PlayerMode>(null);
+  const playerModeRef = useRef<PlayerMode>(null);
 
   // Streams
   const [streams, setStreams] = useState<EnrichedStream[]>([]);
@@ -113,7 +117,12 @@ export default function PlayerPage() {
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState("");
 
-  // mpv playback state
+  // StreamPicker overlay
+  const [showStreamPicker, setShowStreamPicker] = useState(false);
+  const [torboxPlan, setTorboxPlan] = useState<Plan>("free");
+  const [pickerPlatform, setPickerPlatform] = useState<Platform>("web");
+
+  // mpv / video playback state
   const [paused, setPaused] = useState(true);
   const [timePos, setTimePos] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -132,14 +141,16 @@ export default function PlayerPage() {
   const isFullscreenRef = useRef(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<Section>("Subtitles");
-  const [selectedResolutionLabel, setSelectedResolutionLabel] =
-    useState<string>("Unknown");
+  const [selectedResolutionLabel, setSelectedResolutionLabel] = useState<string>("Unknown");
   const [resumeToast, setResumeToast] = useState("");
 
+  // Refs
   const streamPlayerRef = useRef<StreamPlayerService | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const unlistenRef = useRef<(() => void) | null>(null);
   const uiTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const pausedRef = useRef(true);
+  const mutedRef = useRef(false);
   const timePosRef = useRef(0);
   const durationRef = useRef(0);
   const lastSavedPosRef = useRef(0);
@@ -159,6 +170,139 @@ export default function PlayerPage() {
     uiTimeoutRef.current = setTimeout(() => {
       if (!pausedRef.current) setShowControls(false);
     }, 3000);
+  }, []);
+
+  // ── HTML5 video event listeners (for browser-video / hls) ───────────────
+
+  useEffect(() => {
+    if (playerMode !== "browser-video" && playerMode !== "hls") return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    function saveProgress(pos: number, dur: number) {
+      const p = profileRef.current;
+      if (!p || pos < 30) return;
+      const savedPos = dur > 0 && pos / dur >= 0.9 ? 0 : Math.floor(pos);
+      apiPatch(`/api/profiles/${p.id}/history/progress`, {
+        mediaId: progressMediaIdRef.current,
+        mediaType: progressMediaTypeRef.current,
+        position: savedPos,
+        duration: Math.floor(dur),
+      }).catch(() => {});
+    }
+
+    const onPlay = () => {
+      setPaused(false);
+      pausedRef.current = false;
+    };
+    const onPause = () => {
+      setPaused(true);
+      pausedRef.current = true;
+      setShowControls(true);
+    };
+    const onTimeUpdate = () => {
+      const t = video.currentTime;
+      setTimePos(t);
+      timePosRef.current = t;
+      if (t - lastSavedPosRef.current >= 10) {
+        lastSavedPosRef.current = t;
+        saveProgress(t, video.duration || 0);
+      }
+    };
+    const onDurationChange = () => {
+      const d = video.duration || 0;
+      setDuration(d);
+      durationRef.current = d;
+    };
+    const onVolumeChange = () => {
+      setVolumeState(Math.round(video.volume * 100));
+      const m = video.muted;
+      setMuted(m);
+      mutedRef.current = m;
+    };
+    const onWaiting = () => setIsBuffering(true);
+    const onCanPlay = () => setIsBuffering(false);
+    const onProgress = () => {
+      const buf = video.buffered;
+      if (buf.length > 0) setBuffered(buf.end(buf.length - 1));
+    };
+
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("durationchange", onDurationChange);
+    video.addEventListener("volumechange", onVolumeChange);
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("canplay", onCanPlay);
+    video.addEventListener("progress", onProgress);
+
+    return () => {
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("durationchange", onDurationChange);
+      video.removeEventListener("volumechange", onVolumeChange);
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("canplay", onCanPlay);
+      video.removeEventListener("progress", onProgress);
+    };
+  }, [playerMode]);
+
+  // ── Player control callbacks (work for all player types) ────────────────
+
+  const handlePlayPause = useCallback(() => {
+    if (playerModeRef.current === "mpv") {
+      command("cycle", ["pause"]).catch(() => {});
+    } else {
+      const v = videoRef.current;
+      if (!v) return;
+      v.paused ? v.play().catch(() => {}) : v.pause();
+    }
+  }, []);
+
+  const handleSeekRelative = useCallback((delta: number) => {
+    if (playerModeRef.current === "mpv") {
+      command("seek", [String(delta), "relative"]).catch(() => {});
+    } else {
+      const v = videoRef.current;
+      if (!v) return;
+      v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + delta));
+    }
+  }, []);
+
+  const handleSeekTo = useCallback((t: number) => {
+    if (playerModeRef.current === "mpv") {
+      setProperty("time-pos", t).catch(() => {});
+    } else {
+      const v = videoRef.current;
+      if (v) v.currentTime = t;
+    }
+  }, []);
+
+  const handleVolumeChange = useCallback((v: number) => {
+    if (playerModeRef.current === "mpv") {
+      setProperty("volume", v).catch(() => {});
+    } else {
+      const el = videoRef.current;
+      if (el) el.volume = v / 100;
+    }
+  }, []);
+
+  const handleToggleMute = useCallback(() => {
+    if (playerModeRef.current === "mpv") {
+      setProperty("mute", !mutedRef.current).catch(() => {});
+    } else {
+      const v = videoRef.current;
+      if (v) v.muted = !v.muted;
+    }
+  }, []);
+
+  const handleSetSid = useCallback((id: string) => {
+    setProperty("sid", id).catch(() => {});
+  }, []);
+
+  const handleSetAid = useCallback((id: string) => {
+    setProperty("aid", id).catch(() => {});
   }, []);
 
   // ── Load: fetch metadata + streams + resolve link ───────────────────────
@@ -208,7 +352,9 @@ export default function PlayerPage() {
       } else if (name === "volume") {
         setVolumeState((data as number) || 0);
       } else if (name === "mute") {
-        setMuted(!!data);
+        const m = !!data;
+        setMuted(m);
+        mutedRef.current = m;
       } else if (name === "paused-for-cache") {
         if (!!data) setIsBuffering(true);
       } else if (name === "demuxer-cache-duration") {
@@ -224,8 +370,12 @@ export default function PlayerPage() {
 
     async function run() {
       try {
-        const streamPlayer = createStreamPlayer();
-        streamPlayerRef.current = streamPlayer;
+        const tauri = isTauri();
+        const mobile = isMobileBrowser();
+
+        // Determine platform for StreamPicker
+        const platform: Platform = tauri ? "tauri" : mobile ? "mobileweb" : "web";
+        setPickerPlatform(platform);
 
         const mpvConfig: MpvConfig = {
           initialOptions: {
@@ -237,31 +387,30 @@ export default function PlayerPage() {
           observedProperties: OBSERVED_PROPERTIES,
         };
 
-        const p = profileRef.current;
-        const savedPosPromise =
-          streamPlayer.supportsResume && p
-            ? apiGet<{ position: number; duration: number }>(
-                `/api/profiles/${p.id}/history/progress?mediaId=${encodeURIComponent(progressMediaIdRef.current)}`,
-              ).catch(() => ({ position: 0, duration: 0 }))
-            : Promise.resolve({ position: 0, duration: 0 });
+        // Phase 1: Init mpv early for Tauri (runs in parallel with stream fetch)
+        const mpvPromise: Promise<void> = tauri
+          ? init(mpvConfig).then(async () => {
+              if (cancelled) return;
+              unlistenRef.current = await observeProperties(
+                OBSERVED_PROPERTIES,
+                handleProperty,
+              );
+            })
+          : Promise.resolve();
 
-        const mpvPromise =
-          streamPlayer.type === "embedded"
-            ? init(mpvConfig).then(async () => {
-                if (cancelled) return;
-                unlistenRef.current = await observeProperties(
-                  OBSERVED_PROPERTIES,
-                  handleProperty,
-                );
-              })
-            : Promise.resolve();
+        const p = profileRef.current;
+        const savedPosPromise = p
+          ? apiGet<{ position: number; duration: number }>(
+              `/api/profiles/${p.id}/history/progress?mediaId=${encodeURIComponent(progressMediaIdRef.current)}`,
+            ).catch(() => ({ position: 0, duration: 0 }))
+          : Promise.resolve({ position: 0, duration: 0 });
 
         if (activeAddonUrls.length === 0)
           throw new Error(
             "No active addons found. Please enable at least one addon in Settings.",
           );
 
-        // Step 0: TMDB / IMDB Fetch
+        // Step 0: TMDB / IMDB fetch
         setCurrentStep(0);
         const { imdb_id } = await getExternalIds(
           Number(id),
@@ -273,7 +422,7 @@ export default function PlayerPage() {
           );
         if (cancelled) return;
 
-        // Step 1: Getting Torrents (Addons)
+        // Step 1: Getting torrents
         setCurrentStep(1);
         const streamId =
           type === "tv" ? `${imdb_id}:${season ?? 1}:${episode ?? 1}` : imdb_id;
@@ -288,12 +437,10 @@ export default function PlayerPage() {
           );
         if (cancelled) return;
 
-        // Step 2: Checking Media Cache
+        // Step 2: Checking cache
         setCurrentStep(2);
         const enriched = raw.map(enrichStream);
-        const hashes = enriched
-          .map((s) => s.infoHash)
-          .filter(Boolean) as string[];
+        const hashes = enriched.map((s) => s.infoHash).filter(Boolean) as string[];
         const cacheResult = await checkCached(hashes);
         if (cancelled) return;
 
@@ -301,7 +448,7 @@ export default function PlayerPage() {
           if (s.infoHash && cacheResult.data?.[s.infoHash]) s.cached = true;
         }
 
-        // Step 3: Selecting Stream
+        // Step 3: Auto-select best stream
         setCurrentStep(3);
         const best = autoSelectStream(enriched);
         if (!best?.infoHash)
@@ -309,22 +456,95 @@ export default function PlayerPage() {
             "Streams were found, but none matched your playback criteria or were playable.",
           );
 
-        // Step 4: Requesting Media
+        // Step 4: Resolve URL for auto-selected stream
         setCurrentStep(4);
-        const magnet =
-          best.magnetLink ?? `magnet:?xt=urn:btih:${best.infoHash}`;
-        const { url } = await createAndResolveLink(magnet, best.fileIdx);
+        const magnet = best.magnetLink ?? `magnet:?xt=urn:btih:${best.infoHash}`;
+        const {
+          torrentId,
+          fileId,
+          url: resolvedUrl,
+          mimetype,
+        } = await createAndResolveLink(magnet, best.fileIdx);
         if (cancelled) return;
+
+        // Phase 2: Determine player based on flowchart
+        let finalUrl = resolvedUrl;
+        let streamPlayer: StreamPlayerService;
+        let playStream = best;
+
+        if (tauri) {
+          streamPlayer = new MpvStreamPlayer();
+          setPlayerMode("mpv");
+          playerModeRef.current = "mpv";
+        } else if (isBrowserPlayable(mimetype)) {
+          streamPlayer = new BrowserVideoPlayer(() => videoRef.current);
+          setPlayerMode("browser-video");
+          playerModeRef.current = "browser-video";
+        } else {
+          // Check TorBox Pro
+          let planNumber = 0;
+          try {
+            planNumber = await fetchTorboxPlan();
+          } catch {
+            planNumber = 0;
+          }
+          if (cancelled) return;
+
+          const plan = planFromNumber(planNumber);
+          setTorboxPlan(plan);
+          const hasPro = planNumber >= 2;
+
+          if (hasPro) {
+            const FIVE_GB = 5 * 1024 ** 3;
+            const under5gb = enriched.filter(
+              (s) => !s.sizeBytes || s.sizeBytes < FIVE_GB,
+            );
+            const hlsStream = autoSelectStream(under5gb);
+
+            if (hlsStream) {
+              const hlsMagnet =
+                hlsStream.magnetLink ?? `magnet:?xt=urn:btih:${hlsStream.infoHash}`;
+
+              let hlsTorrentId = torrentId;
+              let hlsFileId = fileId;
+              if (hlsStream.infoHash !== best.infoHash) {
+                const res = await createAndResolveLink(hlsMagnet, hlsStream.fileIdx);
+                hlsTorrentId = res.torrentId;
+                hlsFileId = res.fileId;
+              }
+              if (cancelled) return;
+
+              finalUrl = await requestHlsLink(hlsTorrentId, hlsFileId);
+              streamPlayer = new HlsStreamPlayer(() => videoRef.current);
+              setPlayerMode("hls");
+              playerModeRef.current = "hls";
+              playStream = hlsStream;
+            } else {
+              streamPlayer = getFallbackPlayer(mobile);
+            }
+          } else {
+            streamPlayer = getFallbackPlayer(mobile);
+          }
+        }
+
+        streamPlayerRef.current = streamPlayer;
 
         setStreams(enriched);
-        setSelected(best);
-        setSelectedResolutionLabel(best.resolution);
+        setSelected(playStream);
+        setSelectedResolutionLabel(playStream.resolution);
         setLoadState("ready");
-        setIsBuffering(true);
+        if (
+          streamPlayer.type !== "desktop-prompt" &&
+          streamPlayer.type !== "external"
+        ) {
+          setIsBuffering(true);
+        }
         resetUiTimer();
 
-        await mpvPromise;
-        if (cancelled) return;
+        if (tauri) {
+          await mpvPromise;
+          if (cancelled) return;
+        }
 
         const { position: savedPos } = await savedPosPromise;
         const resumeAt =
@@ -333,14 +553,31 @@ export default function PlayerPage() {
           setResumeToast(`Resumed from ${formatTime(resumeAt)}`);
           setTimeout(() => setResumeToast(""), 3000);
         }
-        await streamPlayer.loadFile(url, resumeAt);
-        setPaused(false);
-        pausedRef.current = false;
+
+        if (streamPlayer.type !== "desktop-prompt") {
+          await streamPlayer.loadFile(finalUrl, resumeAt);
+          if (streamPlayer.type !== "external") {
+            setPaused(false);
+            pausedRef.current = false;
+          }
+        }
       } catch (e) {
         if (!cancelled) {
           setLoadError(e instanceof Error ? e.message : String(e));
           setLoadState("error");
         }
+      }
+    }
+
+    function getFallbackPlayer(mobile: boolean): StreamPlayerService {
+      if (mobile) {
+        setPlayerMode("external");
+        playerModeRef.current = "external";
+        return new ExternalStreamPlayer();
+      } else {
+        setPlayerMode("desktop-prompt");
+        playerModeRef.current = "desktop-prompt";
+        return new DesktopPromptPlayer();
       }
     }
 
@@ -351,12 +588,21 @@ export default function PlayerPage() {
       clearTimeout(uiTimeoutRef.current);
       unlistenRef.current?.();
       saveProgress(timePosRef.current, durationRef.current);
-      if (streamPlayerRef.current?.type === "embedded") destroy().catch(() => {});
+
+      const sp = streamPlayerRef.current;
+      if (sp?.type === "embedded") {
+        destroy().catch(() => {});
+      } else if (sp?.destroy) {
+        sp.destroy();
+      }
+
       if (isFullscreenRef.current) {
         isFullscreenRef.current = false;
-        getCurrentWindow()
-          .setFullscreen(false)
-          .catch(() => {});
+        if (isTauri()) {
+          getCurrentWindow().setFullscreen(false).catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
       }
       document.documentElement.classList.remove("player-page");
       document.body.classList.remove("player-page");
@@ -377,21 +623,20 @@ export default function PlayerPage() {
       let handled = true;
       switch (e.key) {
         case "Escape":
-          if (isFullscreenRef.current) handleFullscreen();
+          if (showStreamPicker) {
+            setShowStreamPicker(false);
+          } else if (isFullscreenRef.current) {
+            handleFullscreen();
+          }
           break;
         case " ":
-          command("cycle", ["pause"]).catch(() => {});
+          handlePlayPause();
           break;
         case "ArrowRight":
-          setProperty(
-            "time-pos",
-            Math.min(durationRef.current, timePosRef.current + 10),
-          ).catch(() => {});
+          handleSeekRelative(10);
           break;
         case "ArrowLeft":
-          setProperty("time-pos", Math.max(0, timePosRef.current - 10)).catch(
-            () => {},
-          );
+          handleSeekRelative(-10);
           break;
         case "f":
         case "F":
@@ -399,7 +644,7 @@ export default function PlayerPage() {
           break;
         case "m":
         case "M":
-          setProperty("mute", !muted).catch(() => {});
+          handleToggleMute();
           break;
         default:
           handled = false;
@@ -411,7 +656,7 @@ export default function PlayerPage() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [muted, resetUiTimer]);
+  }, [showStreamPicker, handlePlayPause, handleSeekRelative, handleToggleMute, resetUiTimer]);
 
   // ── Control handlers ────────────────────────────────────────────────────
 
@@ -419,9 +664,13 @@ export default function PlayerPage() {
     const next = !isFullscreenRef.current;
     isFullscreenRef.current = next;
     setIsFullscreen(next);
-    await getCurrentWindow()
-      .setFullscreen(next)
-      .catch(() => {});
+    if (isTauri()) {
+      await getCurrentWindow().setFullscreen(next).catch(() => {});
+    } else if (next) {
+      await document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      await document.exitFullscreen().catch(() => {});
+    }
   }
 
   async function handleSelectStream(stream: EnrichedStream) {
@@ -431,20 +680,42 @@ export default function PlayerPage() {
     try {
       const magnet =
         stream.magnetLink ?? `magnet:?xt=urn:btih:${stream.infoHash}`;
-      const { url } = await createAndResolveLink(magnet, stream.fileIdx);
+      const { url, torrentId, fileId } = await createAndResolveLink(
+        magnet,
+        stream.fileIdx,
+      );
+
+      let finalUrl = url;
+      if (playerModeRef.current === "hls") {
+        finalUrl = await requestHlsLink(torrentId, fileId);
+      }
+
       setSelected(stream);
       setSelectedResolutionLabel(stream.resolution);
       const sp = streamPlayerRef.current;
       if (sp) {
         await sp.loadFile(
-          url,
+          finalUrl,
           sp.supportsResume ? timePosRef.current : undefined,
         );
       }
     } catch (e) {
-      setSwitchError(
-        e instanceof Error ? e.message : "Failed to switch stream",
-      );
+      setSwitchError(e instanceof Error ? e.message : "Failed to switch stream");
+    } finally {
+      setSwitching(false);
+    }
+  }
+
+  async function handleOpenExternal(stream: EnrichedStream) {
+    if (switching) return;
+    setSwitching(true);
+    setSwitchError("");
+    try {
+      const magnet = stream.magnetLink ?? `magnet:?xt=urn:btih:${stream.infoHash}`;
+      const { url } = await createAndResolveLink(magnet, stream.fileIdx);
+      await new ExternalStreamPlayer().loadFile(url);
+    } catch (e) {
+      setSwitchError(e instanceof Error ? e.message : "Failed to open in external player");
     } finally {
       setSwitching(false);
     }
@@ -472,10 +743,13 @@ export default function PlayerPage() {
 
   if (loadState === "loading") {
     return (
-      <div className="relative w-full h-screen flex flex-col items-center justify-center gap-3 bg-background">
-        <BackButton onClick={() => navigate(-1)} />
-        <MultiStepLoader currentStep={currentStep} steps={LOADING_STEPS} />
-      </div>
+      <>
+        <video ref={videoRef} className="hidden" playsInline />
+        <div className="relative w-full h-screen flex flex-col items-center justify-center gap-3 bg-background">
+          <BackButton onClick={() => navigate(-1)} />
+          <MultiStepLoader currentStep={currentStep} steps={LOADING_STEPS} />
+        </div>
+      </>
     );
   }
 
@@ -483,44 +757,107 @@ export default function PlayerPage() {
 
   if (loadState === "error") {
     return (
-      <div className="relative w-full h-screen flex flex-col items-center justify-center gap-4 px-8 text-center bg-background">
-        <BackButton onClick={() => navigate(-1)} />
-        <div className="flex flex-col items-center max-w-sm gap-4">
-          <div className="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mb-2">
-            <OctagonAlert className="text-destructive h-6 w-6" />
+      <>
+        <video ref={videoRef} className="hidden" playsInline />
+        <div className="relative w-full h-screen flex flex-col items-center justify-center gap-4 px-8 text-center bg-background">
+          <BackButton onClick={() => navigate(-1)} />
+          <div className="flex flex-col items-center max-w-sm gap-4">
+            <div className="h-12 w-12 rounded-full bg-destructive/20 flex items-center justify-center mb-2">
+              <OctagonAlert className="text-destructive h-6 w-6" />
+            </div>
+            <h2 className="text-xl font-semibold text-zinc-100">Ooops!</h2>
+            <p className="text-sm text-zinc-400 mb-2">{loadError}</p>
+            <Button variant="secondary" className="p-3" onClick={() => navigate(-1)}>
+              Go back
+            </Button>
           </div>
-          <h2 className="text-xl font-semibold text-zinc-100">Ooops!</h2>
-          <p className="text-sm text-zinc-400 mb-2">{loadError}</p>
-          <Button
-            variant="secondary"
-            className="p-3"
-            onClick={() => navigate(-1)}
-          >
-            Go back
-          </Button>
         </div>
-      </div>
+      </>
     );
   }
 
-  // ── External player: stream picker ─────────────────────────────────────
+  // ── Desktop-prompt screen ───────────────────────────────────────────────
 
-  if (loadState === "ready" && streamPlayerRef.current?.type === "external") {
+  if (loadState === "ready" && playerMode === "desktop-prompt") {
     return (
-      <StreamPicker
-        streams={streams}
-        selected={selected}
-        switching={switching}
-        switchError={switchError}
-        onSelectStream={handleSelectStream}
-        onBack={() => navigate(-1)}
-      />
+      <>
+        <video ref={videoRef} className="hidden" playsInline />
+        <div className="relative w-full h-screen flex flex-col items-center justify-center gap-4 px-8 text-center bg-background">
+          <BackButton onClick={() => navigate(-1)} />
+          <div className="flex flex-col items-center max-w-sm gap-4">
+            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-2">
+              <Layers className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold">Use the desktop app</h2>
+            <p className="text-sm text-zinc-400 mb-2">
+              This stream can't be played in a desktop browser. Download the app for the best experience.
+            </p>
+            <Button variant="secondary" onClick={() => setShowStreamPicker(true)}>
+              Browse other streams
+            </Button>
+            <Button variant="ghost" onClick={() => navigate(-1)}>
+              Go back
+            </Button>
+          </div>
+          {showStreamPicker && (
+            <StreamPicker
+              streams={streams}
+              selected={selected}
+              switching={switching}
+              switchError={switchError}
+              platform={pickerPlatform}
+              plan={torboxPlan}
+              onSelectStream={handleSelectStream}
+              onOpenExternal={handleOpenExternal}
+              onClose={() => setShowStreamPicker(false)}
+              isOverlay
+            />
+          )}
+        </div>
+      </>
+    );
+  }
+
+  // ── External player (VLC opened, show status) ───────────────────────────
+
+  if (loadState === "ready" && playerMode === "external") {
+    return (
+      <>
+        <video ref={videoRef} className="hidden" playsInline />
+        <div className="relative w-full h-screen flex flex-col items-center justify-center gap-4 px-8 text-center bg-background">
+          <BackButton onClick={() => navigate(-1)} />
+          <div className="flex flex-col items-center max-w-sm gap-4">
+            <p className="text-sm text-zinc-400">Opened in VLC.</p>
+            <Button variant="secondary" onClick={() => setShowStreamPicker(true)}>
+              Browse other streams
+            </Button>
+            <Button variant="ghost" onClick={() => navigate(-1)}>
+              Go back
+            </Button>
+          </div>
+          {showStreamPicker && (
+            <StreamPicker
+              streams={streams}
+              selected={selected}
+              switching={switching}
+              switchError={switchError}
+              platform={pickerPlatform}
+              plan={torboxPlan}
+              onSelectStream={handleSelectStream}
+              onOpenExternal={handleOpenExternal}
+              onClose={() => setShowStreamPicker(false)}
+              isOverlay
+            />
+          )}
+        </div>
+      </>
     );
   }
 
   // ── Player UI ───────────────────────────────────────────────────────────
 
   const controlsVisible = showControls || paused || isBuffering;
+  const showVideo = playerMode === "browser-video" || playerMode === "hls";
 
   return (
     <div
@@ -530,6 +867,20 @@ export default function PlayerPage() {
         if (!pausedRef.current) setShowControls(false);
       }}
     >
+      {/* HTML5 video element (hidden for mpv — mpv renders natively) */}
+      {showVideo && (
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-contain bg-black"
+          playsInline
+        />
+      )}
+
+      {/* Invisible video ref for mpv-less paths that still need the element */}
+      {!showVideo && (
+        <video ref={videoRef} className="hidden" />
+      )}
+
       {resumeToast && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-black/70 text-white/80 text-[12px] px-4 py-2 rounded-full pointer-events-none">
           {resumeToast}
@@ -537,6 +888,15 @@ export default function PlayerPage() {
       )}
 
       <BackButton onClick={() => navigate(-1)} />
+
+      {/* Sources button — always visible */}
+      <button
+        onClick={() => setShowStreamPicker(true)}
+        className="absolute top-4 right-4 z-40 w-9 h-9 flex items-center justify-center rounded-full bg-background/60 text-foreground/80 hover:bg-background/80 transition-colors cursor-pointer"
+        aria-label="Browse streams"
+      >
+        <Layers size={16} />
+      </button>
 
       <PlayerControls
         paused={paused}
@@ -565,7 +925,29 @@ export default function PlayerPage() {
         onSelectStream={handleSelectStream}
         onSelectResolution={selectResolution}
         onFullscreen={handleFullscreen}
+        onPlayPause={handlePlayPause}
+        onSeekRelative={handleSeekRelative}
+        onSeekTo={handleSeekTo}
+        onVolumeChange={handleVolumeChange}
+        onToggleMute={handleToggleMute}
+        onSetSid={handleSetSid}
+        onSetAid={handleSetAid}
       />
+
+      {/* StreamPicker overlay */}
+      {showStreamPicker && (
+        <StreamPicker
+          streams={streams}
+          selected={selected}
+          switching={switching}
+          switchError={switchError}
+          platform={pickerPlatform}
+          plan={torboxPlan}
+          onSelectStream={handleSelectStream}
+          onClose={() => setShowStreamPicker(false)}
+          isOverlay
+        />
+      )}
     </div>
   );
 }

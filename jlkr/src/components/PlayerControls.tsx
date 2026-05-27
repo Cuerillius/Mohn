@@ -17,7 +17,6 @@ import {
   VolumeOff,
   X,
 } from "lucide-react";
-import { command, setProperty } from "tauri-plugin-libmpv-api";
 import { groupByResolution } from "../services/addons";
 import type { EnrichedStream, Resolution } from "../types/torbox";
 
@@ -312,6 +311,13 @@ export interface PlayerControlsProps {
   onSelectStream: (s: EnrichedStream) => void;
   onSelectResolution: (label: string) => void;
   onFullscreen: () => void;
+  onPlayPause: () => void;
+  onSeekRelative: (delta: number) => void;
+  onSeekTo: (t: number) => void;
+  onVolumeChange: (v: number) => void;
+  onToggleMute: () => void;
+  onSetSid: (id: string) => void;
+  onSetAid: (id: string) => void;
 }
 
 export default function PlayerControls({
@@ -341,6 +347,13 @@ export default function PlayerControls({
   onSelectStream,
   onSelectResolution,
   onFullscreen,
+  onPlayPause,
+  onSeekRelative,
+  onSeekTo,
+  onVolumeChange,
+  onToggleMute,
+  onSetSid,
+  onSetAid,
 }: PlayerControlsProps) {
   const groups = groupByResolution(streams);
   const resolutionOptions = RESOLUTION_ORDER.filter(
@@ -451,7 +464,7 @@ export default function PlayerControls({
             {activeSection === "Subtitles" && (
               <>
                 <button
-                  onClick={() => setProperty("sid", "no").catch(() => {})}
+                  onClick={() => onSetSid("no")}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer mb-1 ${
                     currentSid === "no"
                       ? "bg-primary text-primary-foreground font-medium"
@@ -472,11 +485,7 @@ export default function PlayerControls({
                     return (
                       <button
                         key={track.id}
-                        onClick={() =>
-                          setProperty("sid", track.id.toString()).catch(
-                            () => {},
-                          )
-                        }
+                        onClick={() => onSetSid(track.id.toString())}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
                           isActive
                             ? "bg-primary text-primary-foreground font-medium"
@@ -516,9 +525,7 @@ export default function PlayerControls({
                   return (
                     <button
                       key={track.id}
-                      onClick={() =>
-                        setProperty("aid", track.id.toString()).catch(() => {})
-                      }
+                      onClick={() => onSetAid(track.id.toString())}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
                         isActive
                           ? "bg-primary text-primary-foreground font-medium"
@@ -562,7 +569,7 @@ export default function PlayerControls({
       >
         <div className="flex items-center gap-10 pointer-events-auto">
           <button
-            onClick={() => command("seek", ["-10", "relative"]).catch(() => {})}
+            onClick={() => onSeekRelative(-10)}
             className="relative flex items-center justify-center rounded-full p-3 transition-colors cursor-pointer text-white drop-shadow-lg"
             aria-label="Rewind 10 seconds"
           >
@@ -573,7 +580,7 @@ export default function PlayerControls({
           </button>
 
           <button
-            onClick={() => command("cycle", ["pause"]).catch(() => {})}
+            onClick={onPlayPause}
             className="rounded-full p-4 transition-colors text-white cursor-pointer drop-shadow-lg"
             aria-label={paused ? "Play" : "Pause"}
           >
@@ -587,7 +594,7 @@ export default function PlayerControls({
           </button>
 
           <button
-            onClick={() => command("seek", ["10", "relative"]).catch(() => {})}
+            onClick={() => onSeekRelative(10)}
             className="relative flex items-center justify-center rounded-full p-3 transition-colors cursor-pointer text-white drop-shadow-lg"
             aria-label="Forward 10 seconds"
           >
@@ -622,7 +629,7 @@ export default function PlayerControls({
               currentTime={timePos}
               duration={duration}
               buffered={buffered}
-              onSeek={(t) => setProperty("time-pos", t).catch(() => {})}
+              onSeek={onSeekTo}
             />
             <span className="text-[12px] text-white/50 tabular-nums shrink-0">
               {formatTime(duration)}
@@ -633,7 +640,7 @@ export default function PlayerControls({
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setProperty("mute", !muted).catch(() => {})}
+                  onClick={onToggleMute}
                   className="rounded-full p-2 transition-colors hover:bg-white/10 cursor-pointer"
                   aria-label="Toggle mute"
                 >
@@ -648,7 +655,7 @@ export default function PlayerControls({
 
                 <VolumeBar
                   value={volume}
-                  onChange={(v) => setProperty("volume", v).catch(() => {})}
+                  onChange={onVolumeChange}
                 />
               </div>
             </div>

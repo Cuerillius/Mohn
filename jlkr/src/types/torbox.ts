@@ -1,6 +1,7 @@
 export interface AddonStream {
   name?: string;
   title?: string;
+  url?: string;
   infoHash?: string;
   fileIdx?: number;
   magnetLink?: string;
@@ -73,5 +74,14 @@ export interface TorBoxTorrentItem {
 export interface TorBoxListResponse {
   success: boolean;
   data: TorBoxTorrentItem[] | TorBoxTorrentItem | null;
+}
+
+export interface TorBoxUserResponse {
+  success: boolean;
+  data: {
+    id: number;
+    email: string;
+    plan: number; // 0=free, 1=essential, 2=pro, 3=standard
+  };
 }
 

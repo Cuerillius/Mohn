@@ -4,6 +4,7 @@ import type {
   TorBoxListResponse,
   TorBoxRequestDlResponse,
   TorBoxTorrentFile,
+  TorBoxUserResponse,
 } from '../types/torbox';
 
 const BASE = `${import.meta.env.VITE_GATEKEEPER_URL}/api/torbox`;
@@ -76,7 +77,7 @@ export async function requestDownloadLink(torrentId: number, fileId: number): Pr
 export async function createAndResolveLink(
   magnet: string,
   fileIdx: number | undefined,
-): Promise<{ torrentId: number; fileId: number; url: string }> {
+): Promise<{ torrentId: number; fileId: number; url: string; mimetype?: string }> {
   const created = await createTorrent(magnet);
   const torrentId = created.data.torrent_id;
 
@@ -112,7 +113,18 @@ export async function createAndResolveLink(
       ? files[fileIdx]
       : candidates.reduce((a, b) => (b.size > a.size ? b : a));
 
-  console.log('[torbox] selected file', file.id, file.name);
+  console.log('[torbox] selected file', file.id, file.name, file.mimetype);
   const dlRes = await requestDownloadLink(torrentId, file.id);
-  return { torrentId, fileId: file.id, url: dlRes.data };
+  return { torrentId, fileId: file.id, url: dlRes.data, mimetype: file.mimetype };
+}
+
+export async function requestHlsLink(torrentId: number, fileId: number): Promise<string> {
+  const params = new URLSearchParams({ torrent_id: String(torrentId), file_id: String(fileId), type: 'hls' });
+  const res = await torboxGet<TorBoxRequestDlResponse>(`/torrents/requestdl?${params}`);
+  return res.data;
+}
+
+export async function fetchTorboxPlan(): Promise<number> {
+  const res = await torboxGet<TorBoxUserResponse>('/user/me');
+  return res.data?.plan ?? 0;
 }
