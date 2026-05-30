@@ -1,21 +1,40 @@
-```txt
-npm install
-npm run dev
+# jlk-gatekeeper
+
+Backend API for the JLKR streaming app. A Cloudflare Worker built with Hono that handles authentication, per-profile data, and acts as an authenticated proxy for TMDB.
+
+## Stack
+
+- **Runtime** — Cloudflare Workers via Wrangler
+- **Framework** — Hono
+- **Auth** — better-auth
+- **Database** — PostgreSQL via Cloudflare Hyperdrive + Drizzle ORM
+
+## Setup
+
+```bash
+bun install
 ```
 
-```txt
-npm run deploy
+Generate Cloudflare binding types after updating `wrangler.toml`:
+
+```bash
+bun cf-typegen
 ```
 
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
+Push the database schema (requires `HYPERDRIVE_CONNECTION_STRING` in env):
 
-```txt
-npm run cf-typegen
+```bash
+bun db:push
 ```
 
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
+Run locally:
 
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
+```bash
+bun dev
+```
+
+Deploy to Cloudflare:
+
+```bash
+bun deploy
 ```

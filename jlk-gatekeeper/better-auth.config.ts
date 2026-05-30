@@ -1,7 +1,7 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { betterAuth } from 'better-auth';
-import postgres from 'postgres';
+import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { betterAuth } from "better-auth";
+import postgres from "postgres";
 import * as schema from "./src/db/schema";
 
 const {
@@ -16,20 +16,18 @@ const {
 const connectionString = HYPERDRIVE_CONNECTION_STRING;
 
 if (!connectionString) {
-  throw new Error('Missing database URL. Set HYPERDRIVE_CONNECTION_STRING.');
+  throw new Error("Missing database URL. Set HYPERDRIVE_CONNECTION_STRING.");
 }
 
 const queryClient = postgres(connectionString);
 const db = drizzle(queryClient);
 
 export const auth = betterAuth({
-  appName: 'JLK Gatekeeper',
-  database: drizzleAdapter(db, { provider: 'pg', schema }),
+  appName: "JLK Gatekeeper",
+  database: drizzleAdapter(db, { provider: "pg", schema }),
   baseURL: BETTER_AUTH_URL,
   secret: BETTER_AUTH_SECRET,
-  trustedOrigins: [
-    ...(FRONTEND_URL ? FRONTEND_URL.split(',') : [])
-  ].filter(Boolean) as string[],
+  trustedOrigins: [...(FRONTEND_URL?.split(",") ?? [])],
   emailAndPassword: {
     enabled: true,
   },
