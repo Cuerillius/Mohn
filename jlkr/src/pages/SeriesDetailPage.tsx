@@ -1,25 +1,25 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import MediaHero from "../components/MediaHero";
 import ContentRow from "../components/ContentRow";
 import EpisodeRow from "../components/EpisodeRow";
 import {
   getTV,
   getTVSeason,
   getTVRecs,
-  imgUrl,
   itemYear,
+  getLogoUrl,
+  getTrailerKey,
 } from "../services/tmdb";
 import type { TMDBTVDetail, TMDBSeason, TMDBItem } from "../types/tmdb";
 import { useWatchlist } from "../hooks/useWatchlist";
-
-type Tab = "details" | `season-${number}` | "similar";
-
-const DETAIL_HERO_GRADIENT =
-  "linear-gradient(to right, rgba(15,15,15,0.95) 30%, rgba(15,15,15,0.5) 60%, rgba(15,15,15,0.15) 100%), linear-gradient(to top, rgba(15,15,15,1) 0%, transparent 40%)";
-
-const backBtnCls =
-  "absolute top-5 left-12 z-10 w-9 h-9 rounded-full bg-background/70 border border-border text-muted-foreground cursor-pointer flex items-center justify-center transition-colors duration-150 shrink-0 hover:bg-muted hover:text-foreground";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 
 export default function SeriesDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +27,8 @@ export default function SeriesDetailPage() {
   const [show, setShow] = useState<TMDBTVDetail | null>(null);
   const [seasons, setSeasons] = useState<TMDBSeason[]>([]);
   const [recs, setRecs] = useState<TMDBItem[]>([]);
-  const [tab, setTab] = useState<Tab>("details");
+  const [selectedSeason, setSelectedSeason] = useState(0);
+  const [showTrailer, setShowTrailer] = useState(false);
   const { inList, toggle } = useWatchlist(id ?? "", "tv");
 
   useEffect(() => {
@@ -35,7 +36,8 @@ export default function SeriesDetailPage() {
     setShow(null);
     setSeasons([]);
     setRecs([]);
-    setTab("details");
+    setSelectedSeason(0);
+    setShowTrailer(false);
     window.scrollTo(0, 0);
 
     Promise.all([getTV(Number(id)), getTVRecs(Number(id))])
@@ -55,209 +57,90 @@ export default function SeriesDetailPage() {
       .catch(console.error);
   }, [id]);
 
-  const handlePlay = () => {
-    if (id) navigate(`/play/tv/${id}/1/1`);
-  };
-
-  if (!show) {
-    return (
-      <>
-        <div className="relative w-full aspect-video max-h-[520px] overflow-hidden bg-[#1e2a3a]">
-          <div
-            className="absolute inset-0"
-            style={{ background: DETAIL_HERO_GRADIENT }}
-          />
-          <button
-            className={backBtnCls}
-            onClick={() => navigate(-1)}
-            aria-label="Back"
-          >
-            <ArrowLeft size={16} />
-          </button>
-        </div>
-        <div className="px-12 pb-10 max-[900px]:px-5" />
-      </>
-    );
-  }
-
-  const bg = imgUrl(show.backdrop_path, "original");
-  const year = itemYear(show);
-  const genre = show.genres?.[0]?.name ?? "";
-  const rating = show.vote_average ? `★ ${show.vote_average.toFixed(1)}` : "";
-  const creator = show.created_by?.map((c) => c.name).join(", ") ?? "";
-  const cast =
-    show.credits?.cast
-      ?.slice(0, 4)
-      .map((c) => c.name)
-      .join(", ") ?? "";
-
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "details", label: "Details" },
-    ...seasons.map((s, i) => ({
-      id: `season-${i}` as Tab,
-      label: `Season ${s.season_number}`,
-    })),
-    { id: "similar", label: "More like this" },
+  const credits = [
+    ...(show?.created_by?.length
+      ? [{ label: "Creator", value: show.created_by.map((c) => c.name).join(", ") }]
+      : []),
+    ...(show?.credits?.cast?.length
+      ? [{ label: "Cast", value: show.credits.cast.slice(0, 4).map((c) => c.name).join(", ") }]
+      : []),
   ];
 
+  const seasonsMeta = show?.number_of_seasons
+    ? `${show.number_of_seasons} season${show.number_of_seasons !== 1 ? "s" : ""}`
+    : undefined;
+
+  const currentSeason = seasons[selectedSeason] ?? null;
+
   return (
-    <>
-      <div className="relative w-full aspect-video max-h-[520px] overflow-hidden bg-[#2a2a2a]">
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            ...(bg
-              ? {
-                  backgroundImage: `url(${bg})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center top",
-                }
-              : { background: "#1e2a3a" }),
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{ background: DETAIL_HERO_GRADIENT }}
-        />
-        <button
-          className={backBtnCls}
-          onClick={() => navigate(-1)}
-          aria-label="Back"
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
-        <div className="absolute bottom-9 left-12 right-12 max-[900px]:left-6 max-[900px]:right-6 max-[900px]:bottom-6">
-          <div className="text-[36px] font-medium mb-[10px] leading-[1.1] max-[900px]:text-2xl">
-            {show.name ?? show.title}
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-[10px]">
-              <button
-                onClick={handlePlay}
-                className="inline-flex items-center gap-[7px] bg-white text-black text-[13px] font-medium py-[9px] px-[22px] rounded-lg border-none cursor-pointer transition-opacity duration-150 hover:opacity-[0.88]"
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
-                Play S1 E1
-              </button>
-              <button
-                onClick={toggle}
-                className="inline-flex items-center gap-[7px] bg-[#2a2a2a] text-[#aaa] text-[13px] font-normal py-[9px] px-5 rounded-lg border-none cursor-pointer transition-colors duration-150 hover:bg-[#333]"
-              >
-                {inList ? "✓ In list" : "+ My list"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="bg-background">
+      <MediaHero
+        backdropPath={show?.backdrop_path ?? null}
+        title={show?.name ?? show?.title ?? ""}
+        logoUrl={show ? getLogoUrl(show.images) : null}
+        tagline={show?.tagline}
+        year={show ? itemYear(show) : undefined}
+        metaExtra={seasonsMeta}
+        rating={show?.vote_average}
+        genre={show?.genres?.[0]?.name}
+        trailerKey={show ? getTrailerKey(show.videos) : null}
+        showTrailer={showTrailer}
+        onToggleTrailer={() => setShowTrailer((v) => !v)}
+        overview={show?.overview}
+        credits={credits}
+        primaryLabel="Play S1 E1"
+        onPlay={() => id && navigate(`/play/tv/${id}/1/1`)}
+        inWatchlist={inList}
+        onToggleWatchlist={toggle}
+        onBack={() => navigate(-1)}
+      />
 
-      <div className="px-12 pb-10 max-[900px]:px-5">
-        <div className="flex border-b-[0.5px] border-[#2e2e2e] mb-8">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              className={`text-[13px] font-normal py-[14px] mr-7 bg-transparent border-none border-b-2 cursor-pointer transition-colors duration-150 -mb-px ${tab === t.id ? "text-white border-white" : "text-[#555] border-transparent hover:text-[#aaa]"}`}
-              onClick={() => setTab(t.id)}
+      {seasons.length > 0 && (
+        <div className="pt-8 pb-12">
+          {/* Season dropdown */}
+          <div className="px-10 max-[900px]:px-6 mb-6 flex items-center gap-4">
+            <Select
+              value={String(selectedSeason)}
+              onValueChange={(v) => setSelectedSeason(Number(v))}
             >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        <div className={tab === "details" ? "block" : "hidden"}>
-          <div className="flex gap-[10px] items-center mb-5 flex-wrap">
-            {year && (
-              <span className="text-sm font-medium text-white">{year}</span>
-            )}
-            {year && genre && <span className="text-[#555] text-xs">·</span>}
-            {genre && (
-              <span className="text-sm font-medium text-white">{genre}</span>
-            )}
-            {show.number_of_seasons > 0 && (
-              <>
-                <span className="text-[#555] text-xs">·</span>
-                <span className="text-sm font-medium text-white">
-                  {show.number_of_seasons} season
-                  {show.number_of_seasons !== 1 ? "s" : ""}
-                </span>
-              </>
-            )}
-            {show.number_of_episodes > 0 && (
-              <>
-                <span className="text-[#555] text-xs">·</span>
-                <span className="text-sm font-medium text-white">
-                  {show.number_of_episodes} episodes
-                </span>
-              </>
-            )}
-            {rating && (
-              <>
-                <span className="text-[#555] text-xs">·</span>
-                <span className="text-xs text-[#aaa] border-[0.5px] border-[#3a3a3a] rounded-[3px] py-[2px] px-[7px]">
-                  {rating}
-                </span>
-              </>
+              <SelectTrigger className="w-auto min-w-[140px] bg-white/5 border-white/10 text-white font-semibold text-[14px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {seasons.map((s, i) => (
+                  <SelectItem key={i} value={String(i)}>
+                    Season {s.season_number}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {currentSeason && (
+              <span className="text-[12px] text-white/30">
+                {currentSeason.episodes.length} episode{currentSeason.episodes.length !== 1 ? "s" : ""}
+              </span>
             )}
           </div>
-          <div className="grid grid-cols-[1fr_200px] gap-10 items-start max-[900px]:grid-cols-1 max-[900px]:gap-6">
-            <p className="text-sm text-[#aaa] leading-[1.75]">
-              {show.overview}
-            </p>
-            <div className="flex flex-col gap-[18px]">
-              {creator && (
-                <div>
-                  <div className="text-[11px] text-[#555] mb-[3px]">
-                    Creator
-                  </div>
-                  <div className="text-[13px] text-white leading-[1.5]">
-                    {creator}
-                  </div>
-                </div>
-              )}
-              {cast && (
-                <div>
-                  <div className="text-[11px] text-[#555] mb-[3px]">Cast</div>
-                  <div className="text-[13px] text-white leading-[1.5]">
-                    {cast}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {seasons.map((season, i) => (
-          <div key={i} className={tab === `season-${i}` ? "block" : "hidden"}>
-            <div className="flex flex-col">
-              {season.episodes.map((ep) => (
+          {/* Episode list */}
+          {currentSeason && (
+            <div className="px-10 max-[900px]:px-6">
+              {currentSeason.episodes.map((ep) => (
                 <EpisodeRow key={ep.episode_number} episode={ep} />
               ))}
             </div>
-          </div>
-        ))}
-
-        <div className={tab === "similar" ? "block" : "hidden"}>
-          <div className="-mx-12 max-[900px]:-mx-5">
-            <ContentRow title="" items={recs} />
-          </div>
+          )}
         </div>
-      </div>
-    </>
+      )}
+
+      {/* More like this */}
+      {recs.length > 0 && (
+        <div className="pt-2 pb-12">
+          <p className="text-[11px] text-white/30 uppercase tracking-widest px-10 mb-4 max-[900px]:px-6">
+            More like this
+          </p>
+          <ContentRow title="" items={recs} />
+        </div>
+      )}
+    </div>
   );
 }

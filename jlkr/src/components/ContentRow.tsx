@@ -4,9 +4,15 @@ import type { TMDBItem } from "../types/tmdb";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "./ui/skeleton";
 
+export interface ItemExtra {
+  progress?: number;
+  label?: string;
+}
+
 interface Props {
   title: string;
   items: TMDBItem[];
+  itemExtras?: Map<string, ItemExtra>;
 }
 
 const GAP = 10;
@@ -18,7 +24,7 @@ function computePage(clipW: number): number {
   return Math.max(2, Math.min(page, MAX_PAGE));
 }
 
-export default function ContentRow({ title, items }: Props) {
+export default function ContentRow({ title, items, itemExtras }: Props) {
   const clipRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const pageIdxRef = useRef(0);
@@ -121,9 +127,18 @@ export default function ContentRow({ title, items }: Props) {
           >
             {items.length > 0 ? (
               <>
-                {items.map((item) => (
-                  <Poster key={item.id} item={item} />
-                ))}
+                {items.map((item) => {
+                  const extra = itemExtras?.get(
+                    `${item.media_type}:${item.id}`,
+                  );
+                  return (
+                    <Poster
+                      key={`${item.media_type}:${item.id}`}
+                      item={item}
+                      progress={extra?.progress}
+                    />
+                  );
+                })}
               </>
             ) : (
               <>

@@ -7,9 +7,10 @@ interface Props {
   item: TMDBItem;
   width?: number;
   height?: number;
+  progress?: number;
 }
 
-export default function Poster({ item, width, height }: Props) {
+export default function Poster({ item, width, height, progress }: Props) {
   const navigate = useNavigate();
   const poster = imgUrl(item.poster_path, "w342");
   const title = itemTitle(item);
@@ -38,6 +39,14 @@ export default function Poster({ item, width, height }: Props) {
       ) : (
         <div className="w-full h-full flex items-end p-2 rounded-lg bg-accent">
           <span className="text-xs text-white/35">{title}</span>
+        </div>
+      )}
+      {progress !== undefined && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 rounded-b-lg overflow-hidden">
+          <div
+            className="h-full bg-primary"
+            style={{ width: `${Math.round(progress * 100)}%` }}
+          />
         </div>
       )}
     </div>

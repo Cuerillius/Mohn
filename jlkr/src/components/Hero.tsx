@@ -1,14 +1,62 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { imgUrl, itemTitle } from "../services/tmdb";
-import type { TMDBItem } from "../types/tmdb";
-import { ChevronLeft, ChevronRight, Info, Play } from "lucide-react";
-import { Button } from "./ui/button";
+import {
+  itemTitle,
+  itemYear,
+  formatRuntime,
+  getLogoUrl,
+} from "../services/tmdb";
+import type { TMDBMovieDetail, TMDBTVDetail } from "../types/tmdb";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import MediaHero from "./MediaHero";
+import { useWatchlist } from "../hooks/useWatchlist";
 
 const DURATION = 5500;
 
+function HeroSlide({ item }: { item: TMDBMovieDetail | TMDBTVDetail }) {
+  const navigate = useNavigate();
+  const isMovie = item.media_type === "movie";
+  const movie = isMovie ? (item as TMDBMovieDetail) : null;
+  const tv = !isMovie ? (item as TMDBTVDetail) : null;
+  const path = `/${item.media_type}/${item.id}`;
+  const { inList, toggle } = useWatchlist(String(item.id), item.media_type as "movie" | "tv");
+
+  const metaExtra = movie?.runtime
+    ? formatRuntime(movie.runtime)
+    : tv?.number_of_seasons
+      ? `${tv.number_of_seasons} season${tv.number_of_seasons !== 1 ? "s" : ""}`
+      : undefined;
+
+  return (
+    <MediaHero
+      backdropPath={item.backdrop_path}
+      title={itemTitle(item)}
+      logoUrl={getLogoUrl(item.images)}
+      year={itemYear(item)}
+      metaExtra={metaExtra}
+      rating={item.vote_average}
+      genre={item.genres?.[0]?.name}
+      overview={item.overview}
+      onPlay={() => navigate(isMovie ? `/play${path}` : `/play/tv/${item.id}/1/1`)}
+      inWatchlist={inList}
+      onToggleWatchlist={toggle}
+      extraActions={
+        <button
+          onClick={() => navigate(path)}
+          className="inline-flex items-center gap-2 bg-white/10 text-white text-sm font-normal py-2.5 px-5 rounded-lg hover:bg-white/15 transition-colors backdrop-blur-sm border border-white/10"
+        >
+          <Info size={14} />
+          More info
+        </button>
+      }
+      fullHeight={false}
+      className="shrink-0 w-full"
+    />
+  );
+}
+
 interface Props {
-  items: TMDBItem[];
+  items: Array<TMDBMovieDetail | TMDBTVDetail>;
 }
 
 export default function Hero({ items }: Props) {
@@ -48,52 +96,12 @@ export default function Hero({ items }: Props) {
   return (
     <div className="relative w-full overflow-hidden h-[80vh]">
       <div
-        className="flex h-full w-full"
+        className="flex h-full w-full transition-transform duration-500 ease-in-out"
         style={{ transform: `translateX(-${heroIdx * 100}%)` }}
       >
-        {items.map((item) => {
-          const bg = imgUrl(item.backdrop_path, "original");
-          const title = itemTitle(item);
-          const path = `/${item.media_type}/${item.id}`;
-          return (
-            <div key={item.id} className="shrink-0 w-full h-full relative">
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={bg ? { backgroundImage: `url(${bg})` } : undefined}
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(to right,oklch(from var(--background) l c h / 0.75) 30%,oklch(from var(--background) l c h / 0.3) 60%,oklch(from var(--background) l c h / 0.05) 100%),linear-gradient(to top,var(--background) 0%,transparent 40%)",
-                }}
-              />
-              <div className="absolute bottom-15 left-12 max-w-105">
-                <div className="text-4xl font-medium text-white mb-3">
-                  {title}
-                </div>
-                <div className="text-sm text-white/50 mb-5.5">
-                  {item.overview}
-                </div>
-                <div className="flex gap-3 items-center">
-                  <Button
-                    className="p-5"
-                    onClick={() => navigate(`/play${path}`)}
-                  >
-                    <Play fill="currentColor" /> Play
-                  </Button>
-                  <Button
-                    className="p-5"
-                    variant="secondary"
-                    onClick={() => navigate(path)}
-                  >
-                    <Info /> More info
-                  </Button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {items.map((item) => (
+          <HeroSlide key={item.id} item={item} />
+        ))}
       </div>
       <button
         className="absolute top-1/2 left-4 -translate-y-1/2 w-10 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 text-white/50 hover:text-white transition-colors duration-150"
