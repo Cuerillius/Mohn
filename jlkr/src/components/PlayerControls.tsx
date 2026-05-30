@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import {
   AudioLines,
   Captions,
@@ -16,9 +16,25 @@ import {
   Volume2,
   VolumeOff,
   X,
+  AppWindow,
+  Download,
+  ArrowLeft,
+  Clock,
+  Info,
+  ExternalLink,
 } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { groupByResolution } from "../services/addons";
-import type { EnrichedStream, Resolution } from "../types/torbox";
+import { createTorrent, pollTorrentProgress } from "../services/torbox";
+import type { EnrichedStream, Resolution, TorBoxTorrentItem } from "../types/torbox";
+import {
+  processStream,
+  sortStreams,
+  formatSize,
+  addonHostname as addonHostnameUtil,
+  type Platform,
+  type ProcessedStream,
+} from "@/lib/streamUtils";
 
 export interface MpvTrack {
   id: number;
@@ -130,13 +146,81 @@ function getLangInfo(lang: string | undefined): LangInfo | undefined {
   return name ? { name } : undefined;
 }
 
+// addonHostname re-exported from utils; keep local alias for existing callsites
 function addonHostname(url: string | undefined): string | undefined {
-  if (!url) return undefined;
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
+  return addonHostnameUtil(url);
+}
+
+
+function TorrentProgressView({
+  stream,
+  progress,
+  error,
+  onCancel,
+}: {
+  stream: EnrichedStream;
+  progress: TorBoxTorrentItem | null;
+  error: string | null;
+  onCancel: () => void;
+}) {
+  const title = stream.rawName || stream.parsedTitle || "Unknown";
+  const pct = progress?.progress ?? 0;
+  const state = progress?.download_state ?? "Starting…";
+  const speed = progress?.download_speed;
+  const seeds = progress?.seeds;
+
+  function formatSpeed(bps: number): string {
+    if (bps >= 1024 * 1024) return `${(bps / (1024 * 1024)).toFixed(1)} MB/s`;
+    if (bps >= 1024) return `${(bps / 1024).toFixed(0)} KB/s`;
+    return `${bps} B/s`;
   }
+
+  return (
+    <div className="flex flex-col gap-3 px-1 py-2">
+      <button
+        onClick={onCancel}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer self-start"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Back to streams
+      </button>
+
+      <div className="flex flex-col gap-2 p-3 rounded-lg border border-border">
+        <div className="text-sm font-medium leading-snug line-clamp-2">{title}</div>
+
+        {error ? (
+          <p className="text-xs text-destructive">{error}</p>
+        ) : (
+          <>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="capitalize">{state}</span>
+              <span>{pct.toFixed(1)}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              {speed !== undefined && speed > 0 && (
+                <span>{formatSpeed(speed)}</span>
+              )}
+              {seeds !== undefined && (
+                <span>{seeds} seeds</span>
+              )}
+              {!progress && (
+                <span className="flex items-center gap-1">
+                  <Loader className="h-3 w-3 animate-spin" />
+                  Connecting…
+                </span>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const RESOLUTION_ORDER: Resolution[] = ["4K", "1080p", "720p", "SD", "Unknown"];
@@ -305,10 +389,12 @@ export interface PlayerControlsProps {
   switchError: string;
   controlsVisible: boolean;
   isFullscreen: boolean;
+  platform: Platform;
   onSectionChange: (s: Section) => void;
   onSetActiveSection: (s: Section) => void;
   onCloseSettings: () => void;
   onSelectStream: (s: EnrichedStream) => void;
+  onOpenExternal?: (s: EnrichedStream) => void;
   onSelectResolution: (label: string) => void;
   onFullscreen: () => void;
   onPlayPause: () => void;
@@ -341,10 +427,12 @@ export default function PlayerControls({
   switchError,
   controlsVisible,
   isFullscreen,
+  platform,
   onSectionChange,
   onSetActiveSection,
   onCloseSettings,
   onSelectStream,
+  onOpenExternal,
   onSelectResolution,
   onFullscreen,
   onPlayPause,
@@ -359,8 +447,26 @@ export default function PlayerControls({
   const resolutionOptions = RESOLUTION_ORDER.filter(
     (r) => groups[r].length > 0,
   );
-  const currentResolutionStreams =
-    groups[selectedResolutionLabel as Resolution] ?? [];
+
+  // ── Source tab state ──────────────────────────────────────────────────────
+  const [pendingStream, setPendingStream] = useState<EnrichedStream | null>(null);
+  const [torrentProgress, setTorrentProgress] = useState<TorBoxTorrentItem | null>(null);
+  const [progressError, setProgressError] = useState<string | null>(null);
+
+  // When sidebar closes, reset pending progress state
+  useEffect(() => {
+    if (!isSettingsOpen) {
+      setPendingStream(null);
+      setTorrentProgress(null);
+      setProgressError(null);
+    }
+  }, [isSettingsOpen]);
+
+  // Only show streams matching the selected resolution, processed + sorted
+  const sortedResolutionStreams = useMemo<ProcessedStream[]>(() => {
+    const resStreams = groups[selectedResolutionLabel as Resolution] ?? [];
+    return sortStreams(resStreams.map((s) => processStream(s, platform)));
+  }, [groups, selectedResolutionLabel, platform]);
 
   return (
     <>
@@ -395,6 +501,36 @@ export default function PlayerControls({
             </button>
           </div>
 
+          {/* Pinned banner for web/mobileweb on Source tab */}
+          {activeSection === "Source" && (platform === "web" || platform === "mobileweb") && (
+            <div className="shrink-0 flex flex-col gap-2 px-3 py-2.5 border-b border-border bg-muted/30">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground leading-snug">
+                  Not all streams can play in the browser. Download the app for the full experience.
+                </p>
+              </div>
+              {platform === "web" && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openUrl("https://torbox.app/download")}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <Download className="h-3 w-3" />
+                    Download App
+                  </button>
+                  <button
+                    onClick={() => openUrl("jlkr://open")}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <AppWindow className="h-3 w-3" />
+                    Open App
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Content */}
           <div className="px-3 py-3 flex-1 min-h-0 w-full overflow-y-auto hide-scrollbar">
             {activeSection === "Quality" && (
@@ -422,42 +558,128 @@ export default function PlayerControls({
 
             {activeSection === "Source" && (
               <div className="flex flex-col gap-1 w-full">
-                {currentResolutionStreams.map((stream) => {
-                  const isSelected = selected?.infoHash === stream.infoHash;
-                  const hostname = addonHostname(stream.addonUrl);
-                  return (
-                    <button
-                      key={stream.infoHash}
-                      disabled={switching}
-                      onClick={() => onSelectStream(stream)}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors cursor-pointer ${
-                        isSelected
-                          ? "bg-primary text-primary-foreground font-medium"
-                          : "border border-border hover:bg-muted"
-                      }`}
-                    >
-                      <div
-                        className={`text-sm leading-snug break-all ${isSelected ? "" : "text-foreground"}`}
-                      >
-                        {stream.rawName || "Unknown Source"}
+                {/* Inline torrent progress view */}
+                {pendingStream ? (
+                  <TorrentProgressView
+                    stream={pendingStream}
+                    progress={torrentProgress}
+                    error={progressError}
+                    onCancel={() => {
+                      setPendingStream(null);
+                      setTorrentProgress(null);
+                      setProgressError(null);
+                    }}
+                  />
+                ) : (
+                  sortedResolutionStreams.map(({ stream, available, sizeGB, explain }) => {
+                    const isSelected = selected?.infoHash === stream.infoHash;
+                    const hostname = addonHostname(stream.addonUrl);
+                    const title = stream.rawName || stream.parsedTitle || "Unknown Source";
+
+                    const metaRow = (active: boolean) => (
+                      <div className={`flex flex-wrap items-center gap-x-1 text-[11px] mt-0.5 ${active ? (isSelected ? "opacity-60" : "text-muted-foreground") : "text-muted-foreground/50"}`}>
+                        {sizeGB > 0 && <span>{formatSize(sizeGB)}</span>}
+                        {hostname && <><span>·</span><span>{hostname}</span></>}
+                        {stream.cached === true && active && (
+                          <><span>·</span><span>cached</span></>
+                        )}
+                        {stream.cached === false && available && (
+                          <><span>·</span><span className={`flex items-center gap-0.5 ${isSelected ? "" : "text-amber-500 font-medium"}`}><Clock className="h-3 w-3" />uncached</span></>
+                        )}
                       </div>
-                      {(hostname || stream.cached) && (
-                        <div className="flex items-center justify-between mt-1 gap-2">
-                          <div
-                            className={`text-xs ${isSelected ? "opacity-60" : "text-muted-foreground"}`}
+                    );
+
+                    if (!available) {
+                      if (platform === "mobileweb") {
+                        return (
+                          <button
+                            key={stream.infoHash ?? stream.rawName}
+                            disabled={switching}
+                            onClick={() => onOpenExternal?.(stream)}
+                            className="w-full text-left px-3 py-2.5 rounded-lg border border-border/50 opacity-60 hover:opacity-80 transition-opacity cursor-pointer"
                           >
-                            {hostname}
-                          </div>
-                          {stream.cached && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-                              cached
-                            </span>
-                          )}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-sm leading-snug truncate text-foreground/70 min-w-0">{title}</div>
+                              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+                            </div>
+                            <div className="flex items-center gap-x-1 text-[11px] mt-0.5 text-muted-foreground/50">
+                              {sizeGB > 0 && <span>{formatSize(sizeGB)}</span>}
+                              {hostname && <><span>·</span><span>{hostname}</span></>}
+                              <span>·</span>
+                              <span className="flex items-center gap-0.5"><ExternalLink className="h-3 w-3" />Opens in VLC</span>
+                            </div>
+                          </button>
+                        );
+                      }
+                      return (
+                        <div
+                          key={stream.infoHash ?? stream.rawName}
+                          className="w-full text-left px-3 py-2.5 rounded-lg border border-border/50 opacity-50 select-none"
+                          title={explain ?? undefined}
+                        >
+                          <div className="text-sm leading-snug truncate text-foreground/70">{title}</div>
+                          {metaRow(false)}
                         </div>
-                      )}
-                    </button>
-                  );
-                })}
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={stream.infoHash ?? stream.rawName}
+                        className={`w-full flex items-stretch rounded-lg text-sm border transition-colors ${
+                          isSelected ? "bg-primary text-primary-foreground border-primary font-medium" : "border-border hover:bg-muted"
+                        }`}
+                      >
+                        <button
+                          disabled={switching}
+                          onClick={() => {
+                            if (stream.cached === false) {
+                              setPendingStream(stream);
+                              setTorrentProgress(null);
+                              setProgressError(null);
+                              const magnet = stream.magnetLink ?? `magnet:?xt=urn:btih:${stream.infoHash}`;
+                              createTorrent(magnet)
+                                .then(({ data }) => {
+                                  const cancel = pollTorrentProgress(data.torrent_id, (torrentItem) => {
+                                    setTorrentProgress(torrentItem);
+                                    if (torrentItem.files && torrentItem.files.length > 0) {
+                                      cancel();
+                                      setPendingStream(null);
+                                      setTorrentProgress(null);
+                                      onSelectStream(stream);
+                                    }
+                                  });
+                                })
+                                .catch((e) => {
+                                  setProgressError(e instanceof Error ? e.message : "Failed to start download");
+                                });
+                            } else {
+                              onSelectStream(stream);
+                            }
+                          }}
+                          className="flex-1 text-left px-3 py-2.5 cursor-pointer min-w-0"
+                        >
+                          <div className={`text-sm leading-snug truncate ${isSelected ? "" : "text-foreground"}`}>{title}</div>
+                          {metaRow(true)}
+                        </button>
+                        {platform === "mobileweb" && (
+                          <button
+                            disabled={switching}
+                            onClick={() => onOpenExternal?.(stream)}
+                            className={`shrink-0 flex items-center px-2.5 border-l cursor-pointer transition-colors ${
+                              isSelected
+                                ? "border-primary-foreground/20 hover:bg-primary-foreground/10"
+                                : "border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                            }`}
+                            title="Open in external player"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
 

@@ -2,6 +2,7 @@ import { useState, JSX, SVGProps } from "react";
 import { useNavigate } from "react-router-dom";
 import { authClient, signIn, signUp } from "../lib/authClient";
 import { useAuth } from "../context/AuthContext";
+import { apiPost } from "../services/api";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ export default function LoginPage() {
           email: data.user.email,
           name: data.user.name,
         });
+        await apiPost("/api/profiles", { name: data.user.name }).catch(() => {});
       }
       navigate("/profile");
     } catch {

@@ -1,10 +1,14 @@
 import {
   MemoryRouter,
+  BrowserRouter,
   Routes,
   Route,
   Navigate,
   Outlet,
 } from "react-router-dom";
+
+const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
+const AppRouter = isTauri ? MemoryRouter : BrowserRouter;
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProfileProvider } from "./context/ProfileContext";
 import { SettingsProvider } from "./context/SettingsContext";
@@ -75,9 +79,9 @@ export default function App() {
     <AuthProvider>
       <ProfileProvider>
         <SettingsProvider>
-          <MemoryRouter>
+          <AppRouter>
             <AppRoutes />
-          </MemoryRouter>
+          </AppRouter>
         </SettingsProvider>
       </ProfileProvider>
     </AuthProvider>

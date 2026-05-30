@@ -19,8 +19,6 @@ import {
 import {
   checkCached,
   createAndResolveLink,
-  fetchTorboxPlan,
-  requestHlsLink,
 } from "../services/torbox";
 import {
   isTauri,
@@ -29,7 +27,6 @@ import {
   MpvStreamPlayer,
   ExternalStreamPlayer,
   BrowserVideoPlayer,
-  HlsStreamPlayer,
   DesktopPromptPlayer,
   type StreamPlayerService,
 } from "../services/streamPlayer";
@@ -43,8 +40,8 @@ import PlayerControls, {
   type Section,
 } from "../components/PlayerControls";
 import MultiStepLoader from "@/components/MultiStepLoader";
-import StreamPicker, { planFromNumber, type Plan, type Platform } from "@/components/StreamPicker";
 import { OctagonAlert, ArrowLeft, Layers } from "lucide-react";
+import type { Platform } from "@/lib/streamUtils";
 import { Button } from "@/components/ui/button";
 
 const OBSERVED_PROPERTIES = [
@@ -117,10 +114,7 @@ export default function PlayerPage() {
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState("");
 
-  // StreamPicker overlay
-  const [showStreamPicker, setShowStreamPicker] = useState(false);
-  const [torboxPlan, setTorboxPlan] = useState<Plan>("free");
-  const [pickerPlatform, setPickerPlatform] = useState<Platform>("web");
+  const [platform, setPlatform] = useState<Platform>("web");
 
   // mpv / video playback state
   const [paused, setPaused] = useState(true);
@@ -373,9 +367,8 @@ export default function PlayerPage() {
         const tauri = isTauri();
         const mobile = isMobileBrowser();
 
-        // Determine platform for StreamPicker
-        const platform: Platform = tauri ? "tauri" : mobile ? "mobileweb" : "web";
-        setPickerPlatform(platform);
+        const detectedPlatform: Platform = tauri ? "tauri" : mobile ? "mobileweb" : "web";
+        setPlatform(detectedPlatform);
 
         const mpvConfig: MpvConfig = {
           initialOptions: {
@@ -460,8 +453,6 @@ export default function PlayerPage() {
         setCurrentStep(4);
         const magnet = best.magnetLink ?? `magnet:?xt=urn:btih:${best.infoHash}`;
         const {
-          torrentId,
-          fileId,
           url: resolvedUrl,
           mimetype,
         } = await createAndResolveLink(magnet, best.fileIdx);
@@ -481,50 +472,7 @@ export default function PlayerPage() {
           setPlayerMode("browser-video");
           playerModeRef.current = "browser-video";
         } else {
-          // Check TorBox Pro
-          let planNumber = 0;
-          try {
-            planNumber = await fetchTorboxPlan();
-          } catch {
-            planNumber = 0;
-          }
-          if (cancelled) return;
-
-          const plan = planFromNumber(planNumber);
-          setTorboxPlan(plan);
-          const hasPro = planNumber >= 2;
-
-          if (hasPro) {
-            const FIVE_GB = 5 * 1024 ** 3;
-            const under5gb = enriched.filter(
-              (s) => !s.sizeBytes || s.sizeBytes < FIVE_GB,
-            );
-            const hlsStream = autoSelectStream(under5gb);
-
-            if (hlsStream) {
-              const hlsMagnet =
-                hlsStream.magnetLink ?? `magnet:?xt=urn:btih:${hlsStream.infoHash}`;
-
-              let hlsTorrentId = torrentId;
-              let hlsFileId = fileId;
-              if (hlsStream.infoHash !== best.infoHash) {
-                const res = await createAndResolveLink(hlsMagnet, hlsStream.fileIdx);
-                hlsTorrentId = res.torrentId;
-                hlsFileId = res.fileId;
-              }
-              if (cancelled) return;
-
-              finalUrl = await requestHlsLink(hlsTorrentId, hlsFileId);
-              streamPlayer = new HlsStreamPlayer(() => videoRef.current);
-              setPlayerMode("hls");
-              playerModeRef.current = "hls";
-              playStream = hlsStream;
-            } else {
-              streamPlayer = getFallbackPlayer(mobile);
-            }
-          } else {
-            streamPlayer = getFallbackPlayer(mobile);
-          }
+          streamPlayer = getFallbackPlayer(mobile);
         }
 
         streamPlayerRef.current = streamPlayer;
@@ -623,8 +571,8 @@ export default function PlayerPage() {
       let handled = true;
       switch (e.key) {
         case "Escape":
-          if (showStreamPicker) {
-            setShowStreamPicker(false);
+          if (isSettingsOpen) {
+            setIsSettingsOpen(false);
           } else if (isFullscreenRef.current) {
             handleFullscreen();
           }
@@ -656,7 +604,7 @@ export default function PlayerPage() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showStreamPicker, handlePlayPause, handleSeekRelative, handleToggleMute, resetUiTimer]);
+  }, [isSettingsOpen, handlePlayPause, handleSeekRelative, handleToggleMute, resetUiTimer]);
 
   // ── Control handlers ────────────────────────────────────────────────────
 
@@ -680,24 +628,47 @@ export default function PlayerPage() {
     try {
       const magnet =
         stream.magnetLink ?? `magnet:?xt=urn:btih:${stream.infoHash}`;
-      const { url, torrentId, fileId } = await createAndResolveLink(
+      const { url, mimetype } = await createAndResolveLink(
         magnet,
         stream.fileIdx,
       );
 
-      let finalUrl = url;
-      if (playerModeRef.current === "hls") {
-        finalUrl = await requestHlsLink(torrentId, fileId);
-      }
-
       setSelected(stream);
       setSelectedResolutionLabel(stream.resolution);
-      const sp = streamPlayerRef.current;
-      if (sp) {
-        await sp.loadFile(
-          finalUrl,
-          sp.supportsResume ? timePosRef.current : undefined,
-        );
+
+      // If we're recovering from an error state, we need to set up a player first
+      if (loadState === "error" || !streamPlayerRef.current) {
+        const tauri = isTauri();
+        const mobile = isMobileBrowser();
+        let sp: import("../services/streamPlayer").StreamPlayerService;
+        if (tauri) {
+          sp = new MpvStreamPlayer();
+          setPlayerMode("mpv");
+          playerModeRef.current = "mpv";
+        } else if (isBrowserPlayable(mimetype)) {
+          sp = new BrowserVideoPlayer(() => videoRef.current);
+          setPlayerMode("browser-video");
+          playerModeRef.current = "browser-video";
+        } else if (mobile) {
+          sp = new ExternalStreamPlayer();
+          setPlayerMode("external");
+          playerModeRef.current = "external";
+        } else {
+          sp = new DesktopPromptPlayer();
+          setPlayerMode("desktop-prompt");
+          playerModeRef.current = "desktop-prompt";
+        }
+        streamPlayerRef.current = sp;
+        setLoadState("ready");
+        if (sp.type !== "desktop-prompt" && sp.type !== "external") {
+          setIsBuffering(true);
+        }
+        if (sp.type !== "desktop-prompt") {
+          await sp.loadFile(url);
+        }
+      } else {
+        const sp = streamPlayerRef.current;
+        await sp.loadFile(url, sp.supportsResume ? timePosRef.current : undefined);
       }
     } catch (e) {
       setSwitchError(e instanceof Error ? e.message : "Failed to switch stream");
@@ -767,10 +738,54 @@ export default function PlayerPage() {
             </div>
             <h2 className="text-xl font-semibold text-zinc-100">Ooops!</h2>
             <p className="text-sm text-zinc-400 mb-2">{loadError}</p>
-            <Button variant="secondary" className="p-3" onClick={() => navigate(-1)}>
+            {streams.length > 0 && (
+              <Button variant="secondary" onClick={() => { setIsSettingsOpen(true); setActiveSection("Source"); }}>
+                Try another stream
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => navigate(-1)}>
               Go back
             </Button>
           </div>
+          {streams.length > 0 && (
+            <PlayerControls
+              paused={paused}
+              isBuffering={false}
+              timePos={timePos}
+              duration={duration}
+              buffered={0}
+              volume={volume}
+              muted={muted}
+              audioTracks={[]}
+              subtitleTracks={[]}
+              currentAid="auto"
+              currentSid="no"
+              isSettingsOpen={isSettingsOpen}
+              activeSection={activeSection}
+              selectedResolutionLabel={selectedResolutionLabel}
+              streams={streams}
+              selected={selected}
+              switching={switching}
+              switchError={switchError}
+              controlsVisible={false}
+              isFullscreen={false}
+              platform={platform}
+              onSectionChange={sectionChange}
+              onSetActiveSection={setActiveSection}
+              onCloseSettings={() => setIsSettingsOpen(false)}
+              onSelectStream={handleSelectStream}
+              onOpenExternal={handleOpenExternal}
+              onSelectResolution={selectResolution}
+              onFullscreen={handleFullscreen}
+              onPlayPause={handlePlayPause}
+              onSeekRelative={handleSeekRelative}
+              onSeekTo={handleSeekTo}
+              onVolumeChange={handleVolumeChange}
+              onToggleMute={handleToggleMute}
+              onSetSid={handleSetSid}
+              onSetAid={handleSetAid}
+            />
+          )}
         </div>
       </>
     );
@@ -792,27 +807,50 @@ export default function PlayerPage() {
             <p className="text-sm text-zinc-400 mb-2">
               This stream can't be played in a desktop browser. Download the app for the best experience.
             </p>
-            <Button variant="secondary" onClick={() => setShowStreamPicker(true)}>
+            <Button variant="secondary" onClick={() => { setIsSettingsOpen(true); setActiveSection("Source"); }}>
               Browse other streams
             </Button>
             <Button variant="ghost" onClick={() => navigate(-1)}>
               Go back
             </Button>
           </div>
-          {showStreamPicker && (
-            <StreamPicker
-              streams={streams}
-              selected={selected}
-              switching={switching}
-              switchError={switchError}
-              platform={pickerPlatform}
-              plan={torboxPlan}
-              onSelectStream={handleSelectStream}
-              onOpenExternal={handleOpenExternal}
-              onClose={() => setShowStreamPicker(false)}
-              isOverlay
-            />
-          )}
+          <PlayerControls
+            paused={paused}
+            isBuffering={isBuffering}
+            timePos={timePos}
+            duration={duration}
+            buffered={buffered}
+            volume={volume}
+            muted={muted}
+            audioTracks={audioTracks}
+            subtitleTracks={subtitleTracks}
+            currentAid={currentAid}
+            currentSid={currentSid}
+            isSettingsOpen={isSettingsOpen}
+            activeSection={activeSection}
+            selectedResolutionLabel={selectedResolutionLabel}
+            streams={streams}
+            selected={selected}
+            switching={switching}
+            switchError={switchError}
+            controlsVisible={false}
+            isFullscreen={isFullscreen}
+            platform={platform}
+            onSectionChange={sectionChange}
+            onSetActiveSection={setActiveSection}
+            onCloseSettings={() => setIsSettingsOpen(false)}
+            onSelectStream={handleSelectStream}
+            onOpenExternal={handleOpenExternal}
+            onSelectResolution={selectResolution}
+            onFullscreen={handleFullscreen}
+            onPlayPause={handlePlayPause}
+            onSeekRelative={handleSeekRelative}
+            onSeekTo={handleSeekTo}
+            onVolumeChange={handleVolumeChange}
+            onToggleMute={handleToggleMute}
+            onSetSid={handleSetSid}
+            onSetAid={handleSetAid}
+          />
         </div>
       </>
     );
@@ -828,27 +866,50 @@ export default function PlayerPage() {
           <BackButton onClick={() => navigate(-1)} />
           <div className="flex flex-col items-center max-w-sm gap-4">
             <p className="text-sm text-zinc-400">Opened in VLC.</p>
-            <Button variant="secondary" onClick={() => setShowStreamPicker(true)}>
+            <Button variant="secondary" onClick={() => { setIsSettingsOpen(true); setActiveSection("Source"); }}>
               Browse other streams
             </Button>
             <Button variant="ghost" onClick={() => navigate(-1)}>
               Go back
             </Button>
           </div>
-          {showStreamPicker && (
-            <StreamPicker
-              streams={streams}
-              selected={selected}
-              switching={switching}
-              switchError={switchError}
-              platform={pickerPlatform}
-              plan={torboxPlan}
-              onSelectStream={handleSelectStream}
-              onOpenExternal={handleOpenExternal}
-              onClose={() => setShowStreamPicker(false)}
-              isOverlay
-            />
-          )}
+          <PlayerControls
+            paused={paused}
+            isBuffering={isBuffering}
+            timePos={timePos}
+            duration={duration}
+            buffered={buffered}
+            volume={volume}
+            muted={muted}
+            audioTracks={audioTracks}
+            subtitleTracks={subtitleTracks}
+            currentAid={currentAid}
+            currentSid={currentSid}
+            isSettingsOpen={isSettingsOpen}
+            activeSection={activeSection}
+            selectedResolutionLabel={selectedResolutionLabel}
+            streams={streams}
+            selected={selected}
+            switching={switching}
+            switchError={switchError}
+            controlsVisible={false}
+            isFullscreen={isFullscreen}
+            platform={platform}
+            onSectionChange={sectionChange}
+            onSetActiveSection={setActiveSection}
+            onCloseSettings={() => setIsSettingsOpen(false)}
+            onSelectStream={handleSelectStream}
+            onOpenExternal={handleOpenExternal}
+            onSelectResolution={selectResolution}
+            onFullscreen={handleFullscreen}
+            onPlayPause={handlePlayPause}
+            onSeekRelative={handleSeekRelative}
+            onSeekTo={handleSeekTo}
+            onVolumeChange={handleVolumeChange}
+            onToggleMute={handleToggleMute}
+            onSetSid={handleSetSid}
+            onSetAid={handleSetAid}
+          />
         </div>
       </>
     );
@@ -889,15 +950,6 @@ export default function PlayerPage() {
 
       <BackButton onClick={() => navigate(-1)} />
 
-      {/* Sources button — always visible */}
-      <button
-        onClick={() => setShowStreamPicker(true)}
-        className="absolute top-4 right-4 z-40 w-9 h-9 flex items-center justify-center rounded-full bg-background/60 text-foreground/80 hover:bg-background/80 transition-colors cursor-pointer"
-        aria-label="Browse streams"
-      >
-        <Layers size={16} />
-      </button>
-
       <PlayerControls
         paused={paused}
         isBuffering={isBuffering}
@@ -919,10 +971,12 @@ export default function PlayerPage() {
         switchError={switchError}
         controlsVisible={controlsVisible}
         isFullscreen={isFullscreen}
+        platform={platform}
         onSectionChange={sectionChange}
         onSetActiveSection={setActiveSection}
         onCloseSettings={() => setIsSettingsOpen(false)}
         onSelectStream={handleSelectStream}
+        onOpenExternal={handleOpenExternal}
         onSelectResolution={selectResolution}
         onFullscreen={handleFullscreen}
         onPlayPause={handlePlayPause}
@@ -933,21 +987,6 @@ export default function PlayerPage() {
         onSetSid={handleSetSid}
         onSetAid={handleSetAid}
       />
-
-      {/* StreamPicker overlay */}
-      {showStreamPicker && (
-        <StreamPicker
-          streams={streams}
-          selected={selected}
-          switching={switching}
-          switchError={switchError}
-          platform={pickerPlatform}
-          plan={torboxPlan}
-          onSelectStream={handleSelectStream}
-          onClose={() => setShowStreamPicker(false)}
-          isOverlay
-        />
-      )}
     </div>
   );
 }

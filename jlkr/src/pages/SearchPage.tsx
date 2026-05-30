@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { searchMulti, imgUrl, itemTitle } from "../services/tmdb";
-import type { TMDBItem } from "../types/tmdb";
+import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { searchMulti } from "../services/tmdb";
+import { keys } from "../lib/queryKeys";
 import Poster from "@/components/Poster";
 
 function getPageSize() {
@@ -11,57 +12,52 @@ function getPageSize() {
 }
 
 export default function SearchPage() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get("q") ?? "";
-  const [results, setResults] = useState<TMDBItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [debouncedQ, setDebouncedQ] = useState(searchQuery);
 
   useEffect(() => {
-    const q = searchQuery.trim();
-    if (!q) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    const timer = setTimeout(() => {
-      searchMulti(q)
-        .then(setResults)
-        .catch(() => setResults([]))
-        .finally(() => setLoading(false));
-    }, 300);
+    const timer = setTimeout(() => setDebouncedQ(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const q = searchQuery.trim();
+  const q = debouncedQ.trim();
+
+  const { data: results = [], isFetching } = useQuery({
+    queryKey: keys.search(q),
+    queryFn: () => searchMulti(q),
+    enabled: q.length > 0,
+    staleTime: 2 * 60 * 1000,
+  });
+
   const PAGE = getPageSize();
   const GAP = 10;
   const availW = window.innerWidth - 96;
   const pw = Math.floor((availW - (PAGE - 1) * GAP) / PAGE);
   const ph = Math.round(pw * 1.5);
 
+  const displayQ = searchQuery.trim();
+
   return (
     <div className="pt-20 px-12 pb-10 max-[900px]:px-5">
       <div className="text-[13px] text-[#555] mb-5">
-        {!q
+        {!displayQ
           ? "Type to search"
-          : loading
+          : isFetching
             ? "Searching…"
-            : `${results.length} result${results.length !== 1 ? "s" : ""} for "${q}"`}
+            : `${results.length} result${results.length !== 1 ? "s" : ""} for "${displayQ}"`}
       </div>
       <div className="flex flex-wrap gap-[10px]">
-        {results.map((item) => {
-          return (
-            <Poster
-              key={`${item.media_type}:${item.id}`}
-              item={item}
-              width={pw}
-              height={ph}
-            />
-          );
-        })}
+        {results.map((item) => (
+          <Poster
+            key={`${item.media_type}:${item.id}`}
+            item={item}
+            width={pw}
+            height={ph}
+          />
+        ))}
       </div>
-      {q && !loading && results.length === 0 && (
+      {displayQ && !isFetching && results.length === 0 && (
         <div className="text-[14px] text-[#555] mt-10">No results found</div>
       )}
     </div>

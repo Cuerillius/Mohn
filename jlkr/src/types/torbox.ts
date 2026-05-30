@@ -68,6 +68,11 @@ export interface TorBoxTorrentItem {
   download_state: string;
   cached?: boolean;
   files?: TorBoxTorrentFile[];
+  progress?: number;
+  download_speed?: number;
+  seeds?: number;
+  peers?: number;
+  eta?: number;
 }
 
 // ?id=N returns a single object; no id returns an array

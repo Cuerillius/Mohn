@@ -4,13 +4,14 @@ import type { TMDBEpisode } from "../types/tmdb";
 
 interface Props {
   episode: TMDBEpisode;
+  onClick?: () => void;
 }
 
-export default function EpisodeRow({ episode }: Props) {
+export default function EpisodeRow({ episode, onClick }: Props) {
   const thumb = imgUrl(episode.still_path, "w300");
 
   return (
-    <div className="group flex gap-4 py-4 border-b border-white/5 last:border-b-0 cursor-pointer rounded-lg -mx-3 px-3 hover:bg-white/[0.04] transition-colors duration-150">
+    <div onClick={onClick} className="group flex gap-4 py-4 border-b border-white/5 last:border-b-0 cursor-pointer rounded-lg -mx-3 px-3 hover:bg-white/[0.04] transition-colors duration-150">
       {/* Thumbnail */}
       <div className="relative shrink-0 w-[180px] h-[101px] rounded-lg overflow-hidden bg-white/5">
         {thumb ? (

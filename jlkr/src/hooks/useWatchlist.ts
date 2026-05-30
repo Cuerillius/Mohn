@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useProfile } from '../context/ProfileContext';
-import { apiGet, apiPost, apiDelete } from '../services/api';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useProfile } from "../context/ProfileContext";
+import { apiGet, apiPost, apiDelete } from "../services/api";
+import { keys } from "../lib/queryKeys";
 
 interface WatchlistEntry {
   id: string;
@@ -8,42 +9,45 @@ interface WatchlistEntry {
   mediaType: string;
 }
 
-export function useWatchlist(mediaId: number | string, mediaType: 'movie' | 'tv') {
+export function useWatchlist(
+  mediaId: number | string,
+  mediaType: "movie" | "tv",
+) {
   const { profile } = useProfile();
-  const [inList, setInList] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!profile) return;
-    let cancelled = false;
-    apiGet<WatchlistEntry[]>(`/api/profiles/${profile.id}/watchlist`)
-      .then(list => {
-        if (!cancelled) setInList(list.some(e => e.mediaId === String(mediaId)));
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [profile, mediaId]);
+  const { data: list = [] } = useQuery({
+    queryKey: keys.watchlist(profile?.id ?? ""),
+    queryFn: () =>
+      apiGet<WatchlistEntry[]>(
+        `/api/profiles/${profile!.id}/watchlist`,
+      ),
+    enabled: !!profile,
+    staleTime: 60 * 1000,
+  });
 
-  const toggle = async () => {
-    if (!profile || loading) return;
-    setLoading(true);
-    try {
+  const inList = list.some((e) => e.mediaId === String(mediaId));
+
+  const { mutate: toggle, isPending: loading } = useMutation({
+    mutationFn: async () => {
+      if (!profile) return;
       if (inList) {
         await apiDelete(`/api/profiles/${profile.id}/watchlist/${mediaId}`);
-        setInList(false);
       } else {
         await apiPost(`/api/profiles/${profile.id}/watchlist`, {
           mediaId: String(mediaId),
           mediaType,
         });
-        setInList(true);
       }
-    } catch {
-      // silently fail — don't reset state
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    onSuccess: () => {
+      if (profile) {
+        queryClient.invalidateQueries({
+          queryKey: keys.watchlist(profile.id),
+        });
+      }
+    },
+  });
 
   return { inList, toggle, loading };
 }

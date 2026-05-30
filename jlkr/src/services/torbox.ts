@@ -118,13 +118,28 @@ export async function createAndResolveLink(
   return { torrentId, fileId: file.id, url: dlRes.data, mimetype: file.mimetype };
 }
 
-export async function requestHlsLink(torrentId: number, fileId: number): Promise<string> {
-  const params = new URLSearchParams({ torrent_id: String(torrentId), file_id: String(fileId), type: 'hls' });
-  const res = await torboxGet<TorBoxRequestDlResponse>(`/torrents/requestdl?${params}`);
-  return res.data;
-}
-
 export async function fetchTorboxPlan(): Promise<number> {
   const res = await torboxGet<TorBoxUserResponse>('/user/me');
   return res.data?.plan ?? 0;
+}
+
+export function pollTorrentProgress(
+  torrentId: number,
+  onUpdate: (item: import('../types/torbox').TorBoxTorrentItem) => void,
+  intervalMs = 2000,
+): () => void {
+  let cancelled = false;
+  async function poll() {
+    if (cancelled) return;
+    try {
+      const list = await getTorrent(torrentId);
+      const item = Array.isArray(list.data) ? list.data[0] : list.data;
+      if (item) onUpdate(item);
+    } catch {
+      // ignore poll errors
+    }
+    if (!cancelled) setTimeout(poll, intervalMs);
+  }
+  poll();
+  return () => { cancelled = true; };
 }
