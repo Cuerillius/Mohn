@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import MediaHero from "../components/MediaHero";
 import ContentRow from "../components/ContentRow";
 import {
@@ -10,33 +11,42 @@ import {
   getLogoUrl,
   getTrailerKey,
 } from "../services/tmdb";
-import type { TMDBMovieDetail, TMDBItem } from "../types/tmdb";
+import { keys } from "../lib/queryKeys";
 import { useWatchlist } from "../hooks/useWatchlist";
 
 export default function MovieDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [movie, setMovie] = useState<TMDBMovieDetail | null>(null);
-  const [recs, setRecs] = useState<TMDBItem[]>([]);
   const [showTrailer, setShowTrailer] = useState(false);
   const { inList, toggle } = useWatchlist(id ?? "", "movie");
 
-  useEffect(() => {
-    if (!id) return;
-    setMovie(null);
-    setRecs([]);
-    setShowTrailer(false);
-    window.scrollTo(0, 0);
-    Promise.all([getMovie(Number(id)), getMovieRecs(Number(id))])
-      .then(([m, r]) => { setMovie(m); setRecs(r); })
-      .catch(console.error);
-  }, [id]);
+  const numId = Number(id);
+
+  const { data: movie } = useQuery({
+    queryKey: keys.movie(numId),
+    queryFn: () => getMovie(numId),
+    enabled: !!id,
+  });
+
+  const { data: recs = [] } = useQuery({
+    queryKey: keys.movieRecs(numId),
+    queryFn: () => getMovieRecs(numId),
+    enabled: !!id,
+  });
 
   const director = movie?.credits?.crew?.find((c) => c.job === "Director");
   const credits = [
     ...(director ? [{ label: "Director", value: director.name }] : []),
     ...(movie?.credits?.cast?.length
-      ? [{ label: "Cast", value: movie.credits.cast.slice(0, 4).map((c) => c.name).join(", ") }]
+      ? [
+          {
+            label: "Cast",
+            value: movie.credits.cast
+              .slice(0, 4)
+              .map((c) => c.name)
+              .join(", "),
+          },
+        ]
       : []),
   ];
 

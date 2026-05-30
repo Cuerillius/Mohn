@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "../services/api";
 import { useProfile } from "../context/ProfileContext";
+import { keys } from "../lib/queryKeys";
 
 export interface HistoryEntry {
   id: string;
@@ -17,7 +18,11 @@ export interface ParsedHistoryEntry extends HistoryEntry {
   episode?: number;
 }
 
-export function parseMediaId(mediaId: string): { tmdbId: number; season?: number; episode?: number } {
+export function parseMediaId(mediaId: string): {
+  tmdbId: number;
+  season?: number;
+  episode?: number;
+} {
   const parts = mediaId.split(":");
   if (parts[0] === "tv") {
     return {
@@ -29,45 +34,33 @@ export function parseMediaId(mediaId: string): { tmdbId: number; season?: number
   return { tmdbId: Number(parts[1]) };
 }
 
+function parseEntries(entries: HistoryEntry[]) {
+  const parsed = entries.map((e) => ({ ...e, ...parseMediaId(e.mediaId) }));
+  return {
+    allHistory: parsed,
+    inProgress: parsed.filter(
+      (e) => e.position > 30 && e.duration > 0 && e.position / e.duration < 0.9,
+    ),
+    finished: parsed.filter((e) => e.position === 0 && e.duration > 0),
+  };
+}
+
 export default function useWatchHistory() {
   const { profile } = useProfile();
-  const [inProgress, setInProgress] = useState<ParsedHistoryEntry[]>([]);
-  const [finished, setFinished] = useState<ParsedHistoryEntry[]>([]);
-  const [allHistory, setAllHistory] = useState<ParsedHistoryEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!profile) {
-      setInProgress([]);
-      setFinished([]);
-      setAllHistory([]);
-      setIsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setIsLoading(true);
-    apiGet<HistoryEntry[]>(`/api/profiles/${profile.id}/history`)
-      .then((entries) => {
-        if (cancelled) return;
-        const parsed = entries.map((e) => ({ ...e, ...parseMediaId(e.mediaId) }));
-        setAllHistory(parsed);
-        setInProgress(
-          parsed.filter(
-            (e) => e.position > 30 && e.duration > 0 && e.position / e.duration < 0.9
-          )
-        );
-        setFinished(
-          parsed.filter((e) => e.position === 0 && e.duration > 0)
-        );
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [profile]);
+  const { data, isLoading } = useQuery({
+    queryKey: keys.history(profile?.id ?? ""),
+    queryFn: () =>
+      apiGet<HistoryEntry[]>(`/api/profiles/${profile!.id}/history`),
+    enabled: !!profile,
+    select: parseEntries,
+    staleTime: 30 * 1000,
+  });
 
-  return { inProgress, finished, allHistory, isLoading };
+  return {
+    inProgress: data?.inProgress ?? [],
+    finished: data?.finished ?? [],
+    allHistory: data?.allHistory ?? [],
+    isLoading,
+  };
 }

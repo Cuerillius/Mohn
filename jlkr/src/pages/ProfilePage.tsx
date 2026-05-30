@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useProfile, type Profile } from "../context/ProfileContext";
 import { useSettings } from "../context/SettingsContext";
 import { signOut } from "../lib/authClient";
 import { apiGet, apiPost, apiDelete, apiPatch } from "../services/api";
+import { keys } from "../lib/queryKeys";
 
 function ProfileAvatar({ name, size = 80 }: { name: string; size?: number }) {
   const initials = name
@@ -29,12 +31,10 @@ export default function ProfilePage() {
   const { setProfile } = useProfile();
   const { torboxKey, setTorboxKey, addonUrls, addAddonUrl, removeAddonUrl } =
     useSettings();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const queryClient = useQueryClient();
+
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
-  const [loadingFetch, setLoadingFetch] = useState(true);
-  const [loadingAdd, setLoadingAdd] = useState(false);
-  const [error, setError] = useState("");
   const [view, setView] = useState<"picker" | "settings">("picker");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -42,65 +42,63 @@ export default function ProfilePage() {
   const [addonUrlError, setAddonUrlError] = useState("");
   const [addonAdding, setAddonAdding] = useState(false);
 
-  useEffect(() => {
-    apiGet<Profile[]>("/api/profiles")
-      .then(setProfiles)
-      .catch(() => setError("Could not load profiles"))
-      .finally(() => setLoadingFetch(false));
-  }, []);
+  const {
+    data: profiles = [],
+    isLoading: loadingFetch,
+    error: fetchError,
+  } = useQuery({
+    queryKey: keys.profiles(),
+    queryFn: () => apiGet<Profile[]>("/api/profiles"),
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (name: string) =>
+      apiPost<Profile>("/api/profiles", { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.profiles() });
+      setAdding(false);
+      setNewName("");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiDelete(`/api/profiles/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.profiles() }),
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      apiPatch<Profile>(`/api/profiles/${id}`, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: keys.profiles() });
+      setEditingId(null);
+    },
+  });
 
   const selectProfile = (p: Profile) => {
     setProfile(p);
     navigate("/");
   };
 
-  const addProfile = async () => {
-    if (!newName.trim() || loadingAdd) return;
-    setLoadingAdd(true);
-    try {
-      const created = await apiPost<Profile>("/api/profiles", {
-        name: newName.trim(),
-      });
-      setProfiles((prev) => [...prev, created]);
-      setAdding(false);
-      setNewName("");
-    } catch {
-      setError("Could not create profile");
-    } finally {
-      setLoadingAdd(false);
-    }
+  const addProfile = () => {
+    if (!newName.trim() || addMutation.isPending) return;
+    addMutation.mutate(newName.trim());
   };
 
-  const deleteProfile = async (id: string) => {
-    try {
-      await apiDelete(`/api/profiles/${id}`);
-      setProfiles((prev) => prev.filter((p) => p.id !== id));
-    } catch {
-      setError("Could not delete profile");
-    }
-  };
+  const deleteProfile = (id: string) => deleteMutation.mutate(id);
 
   const startRename = (p: Profile) => {
     setEditingId(p.id);
     setEditName(p.name);
   };
 
-  const saveRename = async (id: string) => {
+  const saveRename = (id: string) => {
     const trimmed = editName.trim();
     if (!trimmed) {
       setEditingId(null);
       return;
     }
-    try {
-      const updated = await apiPatch<Profile>(`/api/profiles/${id}`, {
-        name: trimmed,
-      });
-      setProfiles((prev) => prev.map((p) => (p.id === id ? updated : p)));
-    } catch {
-      setError("Could not rename profile");
-    } finally {
-      setEditingId(null);
-    }
+    renameMutation.mutate({ id, name: trimmed });
   };
 
   const handleAddAddonUrl = async () => {
@@ -141,6 +139,16 @@ export default function ProfilePage() {
     navigate("/login");
   };
 
+  const mutationError =
+    addMutation.error?.message ??
+    deleteMutation.error?.message ??
+    renameMutation.error?.message;
+  const error = fetchError
+    ? "Could not load profiles"
+    : mutationError
+      ? "Could not update profile"
+      : "";
+
   if (loadingFetch) {
     return <div className="min-h-screen bg-[#0f0f0f]" />;
   }
@@ -152,7 +160,6 @@ export default function ProfilePage() {
         className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center text-[#555] hover:text-white hover:bg-white/[0.08] transition-colors"
         onClick={() => {
           setView(view === "settings" ? "picker" : "settings");
-          setError("");
           setEditingId(null);
         }}
         aria-label={view === "settings" ? "Back" : "Settings"}
@@ -304,9 +311,9 @@ export default function ProfilePage() {
                   <button
                     className="text-xs text-white bg-transparent border-none cursor-pointer px-1"
                     onClick={addProfile}
-                    disabled={loadingAdd}
+                    disabled={addMutation.isPending}
                   >
-                    {loadingAdd ? "…" : "Add"}
+                    {addMutation.isPending ? "…" : "Add"}
                   </button>
                   <button
                     className="text-xs text-[#555] bg-transparent border-none cursor-pointer px-1"
