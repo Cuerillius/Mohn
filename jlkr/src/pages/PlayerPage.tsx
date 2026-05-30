@@ -75,10 +75,10 @@ function BackButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="absolute top-4 left-4 z-40 w-9 h-9 flex items-center justify-center rounded-full bg-background/60 text-foreground/80 hover:bg-background/80 transition-colors cursor-pointer"
+      className="fixed top-6 left-8 z-50 p-2 rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 transition-colors cursor-pointer"
       aria-label="Back"
     >
-      <ArrowLeft size={16} />
+      <ArrowLeft size={20} />
     </button>
   );
 }

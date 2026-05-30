@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { searchMulti, imgUrl, itemTitle } from '../services/tmdb';
-import type { TMDBItem } from '../types/tmdb';
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { searchMulti, imgUrl, itemTitle } from "../services/tmdb";
+import type { TMDBItem } from "../types/tmdb";
+import Poster from "@/components/Poster";
 
 function getPageSize() {
   if (window.innerWidth <= 540) return 2;
@@ -12,13 +13,16 @@ function getPageSize() {
 export default function SearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const searchQuery = searchParams.get('q') ?? '';
+  const searchQuery = searchParams.get("q") ?? "";
   const [results, setResults] = useState<TMDBItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const q = searchQuery.trim();
-    if (!q) { setResults([]); return; }
+    if (!q) {
+      setResults([]);
+      return;
+    }
     setLoading(true);
     const timer = setTimeout(() => {
       searchMulti(q)
@@ -40,32 +44,20 @@ export default function SearchPage() {
     <div className="pt-20 px-12 pb-10 max-[900px]:px-5">
       <div className="text-[13px] text-[#555] mb-5">
         {!q
-          ? 'Type to search'
+          ? "Type to search"
           : loading
-          ? 'Searching…'
-          : `${results.length} result${results.length !== 1 ? 's' : ''} for "${q}"`}
+            ? "Searching…"
+            : `${results.length} result${results.length !== 1 ? "s" : ""} for "${q}"`}
       </div>
       <div className="flex flex-wrap gap-[10px]">
-        {results.map(item => {
-          const poster = imgUrl(item.poster_path, 'w342');
-          const title = itemTitle(item);
-          const path = item.media_type === 'tv' ? `/tv/${item.id}` : `/movie/${item.id}`;
+        {results.map((item) => {
           return (
-            <div
-              key={item.id}
-              className="poster group shrink-0 rounded-lg cursor-pointer relative bg-[#2a2a2a] shadow-[inset_0_0_0_0px_rgba(255,255,255,0)] hover:shadow-[inset_0_0_0_2px_rgba(255,255,255,0.55)] transition-shadow duration-150"
-              style={{ width: pw, height: ph }}
-              onClick={() => navigate(path)}
-            >
-              {poster ? (
-                <img src={poster} alt={title} loading="lazy" className="w-full h-full object-cover block rounded-lg" />
-              ) : (
-                <div className="w-full h-full flex items-end p-2 rounded-lg overflow-hidden" style={{ background: '#1e2a3a' }}>
-                  <span className="text-[9px] text-white/35 leading-[1.3]">{title}</span>
-                </div>
-              )}
-              <div className="absolute inset-0 rounded-lg bg-transparent group-hover:bg-black/20 transition-colors duration-150" />
-            </div>
+            <Poster
+              key={`${item.media_type}:${item.id}`}
+              item={item}
+              width={pw}
+              height={ph}
+            />
           );
         })}
       </div>

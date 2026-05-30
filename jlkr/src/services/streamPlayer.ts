@@ -36,10 +36,10 @@ export class MpvStreamPlayer implements StreamPlayerService {
 
   async loadFile(url: string, startPositionSecs?: number): Promise<void> {
     if (startPositionSecs !== undefined) {
-      await setProperty("options/start", String(Math.floor(startPositionSecs)));
+      await command("loadfile", [url, "replace", "0", `start=${Math.floor(startPositionSecs)}`]);
+    } else {
+      await command("loadfile", [url]);
     }
-    await command("loadfile", [url]);
-    await setProperty("options/start", "none");
   }
 }
 
@@ -113,7 +113,12 @@ export class HlsStreamPlayer implements StreamPlayerService {
       videoEl.src = url;
       videoEl.load();
       if (startPositionSecs !== undefined) {
-        videoEl.currentTime = startPositionSecs;
+        await new Promise<void>((resolve) => {
+          videoEl.addEventListener("loadedmetadata", () => {
+            videoEl.currentTime = startPositionSecs;
+            resolve();
+          }, { once: true });
+        });
       }
       await videoEl.play();
       return;
