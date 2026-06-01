@@ -60,7 +60,6 @@ interface Props {
 }
 
 export default function Hero({ items }: Props) {
-  const navigate = useNavigate();
   const [heroIdx, setHeroIdx] = useState(0);
   const heroIdxRef = useRef(0);
   const startRef = useRef<number | null>(null);
