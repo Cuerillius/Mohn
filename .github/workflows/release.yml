@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-windows:
+    name: Windows Installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            jlkr/src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('jlkr/src-tauri/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install frontend deps
+        working-directory: jlkr
+        run: bun install
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VITE_GATEKEEPER_URL: ${{ secrets.VITE_GATEKEEPER_URL }}
+        with:
+          projectPath: jlkr
+          tagName: ${{ github.ref_name }}
+          releaseName: Mohn ${{ github.ref_name }}
+          releaseBody: See the assets below to download this release.
+          releaseDraft: false
+          prerelease: false
+
+  deploy-web:
+    name: Deploy Web App
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install and build
+        working-directory: jlkr
+        env:
+          VITE_GATEKEEPER_URL: ${{ secrets.VITE_GATEKEEPER_URL }}
+        run: |
+          bun install
+          bun run build
+
+      - uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: mohn-web
+          directory: jlkr/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-gatekeeper:
+    name: Deploy Gatekeeper
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        working-directory: jlk-gatekeeper
+        run: npm ci
+
+      - name: Run migrations
+        working-directory: jlk-gatekeeper
+        env:
+          HYPERDRIVE_CONNECTION_STRING: ${{ secrets.DATABASE_URL }}
+        run: npm run db:migrate
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: jlk-gatekeeper
+          command: deploy --minify
+          secrets: |
+            TMDB_API_TOKEN
+            BETTER_AUTH_SECRET
+            GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_SECRET
+            FRONTEND_URL
+            BETTER_AUTH_URL
+        env:
+          TMDB_API_TOKEN: ${{ secrets.TMDB_API_TOKEN }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}

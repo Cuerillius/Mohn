@@ -82,11 +82,12 @@ export default function Navbar() {
   return (
     <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-100 bg-background border rounded-full flex items-center p-2">
       <button
-        className="font-bold ml-2"
+        className="ml-2 flex items-center gap-2"
         onClick={() => navigate("/")}
         aria-label="Home"
       >
-        JLKR
+        <img src="/mohn.svg" alt="Mohn" className="size-8" />
+        <span className="font-bold">Mohn</span>
       </button>
 
       {searchAllowed && (

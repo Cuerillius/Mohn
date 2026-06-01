@@ -1,6 +1,6 @@
-# jlk-gatekeeper
+# mohn-gatekeeper
 
-Backend API for the JLKR streaming app. A Cloudflare Worker built with Hono that handles authentication, per-profile data, and acts as an authenticated proxy for TMDB.
+Backend API for the Mohn streaming app. A Cloudflare Worker built with Hono that handles authentication, per-profile data, and acts as an authenticated proxy for TMDB.
 
 ## Stack
 

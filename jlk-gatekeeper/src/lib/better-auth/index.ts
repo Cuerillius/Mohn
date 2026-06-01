@@ -8,7 +8,7 @@ export const auth = (env: CloudflareBindings) => {
   return betterAuth({
     database: drizzleAdapter(getDB(env), { provider: "pg", schema }),
     baseURL: env.BETTER_AUTH_URL,
-    appName: 'JLK Gatekeeper',
+    appName: 'Mohn Gatekeeper',
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [
       ...(env.FRONTEND_URL ? env.FRONTEND_URL.split(',') : [])

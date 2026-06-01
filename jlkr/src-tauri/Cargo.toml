@@ -1,12 +1,12 @@
 [package]
-name = "jlkr"
+name = "mohn"
 version = "0.1.0"
-description = "jlkr desktop app"
+description = "Mohn desktop app"
 authors = []
 edition = "2021"
 
 [lib]
-name = "jlkr_lib"
+name = "mohn_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -14,6 +14,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+tauri-plugin-deep-link = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-libmpv = "0.3.2"
 serde = { version = "1", features = ["derive"] }

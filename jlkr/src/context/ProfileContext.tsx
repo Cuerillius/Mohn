@@ -14,7 +14,7 @@ interface ProfileContextValue {
   clearProfile: () => void;
 }
 
-const STORAGE_KEY = 'jlkr_profile';
+const STORAGE_KEY = 'mohn_profile';
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {

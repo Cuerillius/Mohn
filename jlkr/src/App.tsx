@@ -40,7 +40,7 @@ function RequireAuth() {
 }
 
 function RequireProfile() {
-  const hasProfile = Boolean(localStorage.getItem("jlkr_profile"));
+  const hasProfile = Boolean(localStorage.getItem("mohn_profile"));
   if (!hasProfile) return <Navigate to="/profile" replace />;
   return <Outlet />;
 }
