@@ -4,14 +4,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-03-19",
   "compatibility_flags": ["nodejs_compat"],
-  "vars": {
-    "TMDB_API_TOKEN": "",
-    "FRONTEND_URL": "",
-    "BETTER_AUTH_URL": "",
-    "BETTER_AUTH_SECRET": "",
-    "GOOGLE_CLIENT_ID": "",
-    "GOOGLE_CLIENT_SECRET": "",
-  },
+  // vars are intentionally empty — all secrets are set via wrangler secret put
+  "vars": {},
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
