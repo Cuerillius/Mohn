@@ -1,4 +1,4 @@
-import { command, setProperty } from "tauri-plugin-libmpv-api";
+import { command } from "tauri-plugin-libmpv-api";
 import Hls from "hls.js";
 
 export type StreamPlayerType = "embedded" | "external" | "browser-video" | "hls" | "desktop-prompt";

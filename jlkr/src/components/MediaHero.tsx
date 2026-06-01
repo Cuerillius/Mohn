@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import "lite-youtube-embed/src/lite-yt-embed.css";
 import "lite-youtube-embed/src/lite-yt-embed.js";
-import { ArrowLeft, Star, Play, Tv, Check, Plus, Bookmark } from "lucide-react";
+import { ArrowLeft, Star, Play, Tv, Bookmark } from "lucide-react";
 import { imgUrl } from "../services/tmdb";
 
 export interface MediaHeroCredit {
