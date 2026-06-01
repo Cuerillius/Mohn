@@ -73,15 +73,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Install deps
         working-directory: jlk-gatekeeper
-        run: npm ci
+        run: bun install
 
       - name: Run migrations
         working-directory: jlk-gatekeeper
         env:
           HYPERDRIVE_CONNECTION_STRING: ${{ secrets.DATABASE_URL }}
-        run: npm run db:migrate
+        run: bun run db:migrate
 
       - uses: cloudflare/wrangler-action@v3
         with:
