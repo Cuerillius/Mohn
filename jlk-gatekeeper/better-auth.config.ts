@@ -23,7 +23,7 @@ const queryClient = postgres(connectionString);
 const db = drizzle(queryClient);
 
 export const auth = betterAuth({
-  appName: "JLK Gatekeeper",
+  appName: "Mohn Gatekeeper",
   database: drizzleAdapter(db, { provider: "pg", schema }),
   baseURL: BETTER_AUTH_URL,
   secret: BETTER_AUTH_SECRET,

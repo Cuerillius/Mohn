@@ -496,7 +496,7 @@ export default function SettingsPage() {
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           TorBox is a cloud-based torrent service that
                           pre-caches torrents on their servers. Instead of
-                          downloading the torrents, jlkr fetches a direct stream
+                          downloading the torrents, Mohn fetches a direct stream
                           link from TorBox — giving you instant, buffer-free
                           playback without seeding or waiting.
                         </p>

@@ -1,26 +1,24 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "jlk-gatekeeper",
+  "name": "mohn-gatekeeper",
   "main": "src/index.ts",
   "compatibility_date": "2026-03-19",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "TMDB_API_TOKEN": "",
     "FRONTEND_URL": "",
     "BETTER_AUTH_URL": "",
     "BETTER_AUTH_SECRET": "",
     "GOOGLE_CLIENT_ID": "",
-    "GOOGLE_CLIENT_SECRET": ""
+    "GOOGLE_CLIENT_SECRET": "",
   },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "0c2c3be8863f4c43ba58e4507b70dab3",
-      "localConnectionString": "postgres://user:password@localhost:5432/better_auth"
-    }
-  ]
+      "id": "04aed4fb7de64b8f95abae8ba8c50018",
+      "localConnectionString": "postgres://user:password@localhost:5432/better_auth",
+    },
+  ],
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",

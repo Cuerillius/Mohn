@@ -72,6 +72,9 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-dvh">
       <div className="flex flex-1 flex-col justify-center px-4 py-10 lg:px-6">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
+          <div className="flex justify-center mb-6">
+            <img src="/mohn.svg" alt="Mohn" className="size-16" />
+          </div>
           <h2 className="text-balance text-center text-xl font-semibold text-foreground">
             {mode === "signin" ? "Sign in" : "Sign up"}
           </h2>
