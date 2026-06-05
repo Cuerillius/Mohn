@@ -9,8 +9,13 @@ import settings from "./routes/settings";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
+const TAURI_ORIGINS = ["https://tauri.localhost", "tauri://localhost"];
+
 app.use("*", (c, next) => {
-  const allowedOrigins = c.env.FRONTEND_URL?.split(",") ?? [];
+  const allowedOrigins = [
+    ...(c.env.FRONTEND_URL?.split(",") ?? []),
+    ...TAURI_ORIGINS,
+  ];
   return cors({
     origin: allowedOrigins,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
