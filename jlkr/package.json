@@ -10,6 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@fabianlars/tauri-plugin-oauth": "^2.0.0",
     "@fontsource-variable/inter": "^5.2.8",
     "@tabler/icons-react": "^3.44.0",
     "@tailwindcss/vite": "^4.3.0",

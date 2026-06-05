@@ -1,12 +1,14 @@
 import { useState, JSX, SVGProps } from "react";
 import { useNavigate } from "react-router-dom";
-import { authClient, signIn, signUp } from "../lib/authClient";
+import { authClient, signIn, signUp, getSession } from "../lib/authClient";
 import { useAuth } from "../context/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 import { apiPost } from "../services/api";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { keys } from "../lib/queryKeys";
 
 const GoogleIcon = (
   props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>,
@@ -19,6 +21,7 @@ const GoogleIcon = (
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setUser } = useAuth();
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -58,7 +61,9 @@ export default function LoginPage() {
           email: data.user.email,
           name: data.user.name,
         });
-        await apiPost("/api/profiles", { name: data.user.name }).catch(() => {});
+        await apiPost("/api/profiles", { name: data.user.name }).catch(
+          () => {},
+        );
       }
       navigate("/profile");
     } catch {
@@ -176,11 +181,81 @@ export default function LoginPage() {
             onClick={async () => {
               setGoogleLoading(true);
               setError("");
-              await authClient.signIn.social({
-                provider: "google",
-                callbackURL: `${window.location.origin}/profile`,
-              });
-              setGoogleLoading(false);
+
+              const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
+              if (!isTauri) {
+                await authClient.signIn.social({
+                  provider: "google",
+                  callbackURL: `${window.location.origin}/profile`,
+                });
+                setGoogleLoading(false);
+                return;
+              }
+
+              const { start, cancel, onUrl } =
+                await import("@fabianlars/tauri-plugin-oauth");
+              const { WebviewWindow } =
+                await import("@tauri-apps/api/webviewWindow");
+
+              let port: number | undefined;
+              let unlistenUrl: (() => void) | undefined;
+              let oauthWindow: InstanceType<typeof WebviewWindow> | undefined;
+
+              try {
+                port = await start();
+
+                unlistenUrl = await onUrl(async () => {
+                  unlistenUrl?.();
+                  await oauthWindow?.close();
+                  if (port !== undefined) await cancel(port).catch(() => {});
+
+                  await queryClient.invalidateQueries({
+                    queryKey: keys.session(),
+                  });
+                  const { data } = await getSession();
+                  if (data?.user) {
+                    setUser({
+                      id: data.user.id,
+                      email: data.user.email,
+                      name: data.user.name,
+                    });
+                    navigate("/profile");
+                  } else {
+                    setError("Google sign-in failed — please try again.");
+                  }
+                  setGoogleLoading(false);
+                });
+
+                const result = await (
+                  authClient.signIn.social as (
+                    opts: unknown,
+                  ) => Promise<{
+                    data?: { url?: string } | null;
+                    error?: unknown;
+                  } | null>
+                )({
+                  provider: "google",
+                  callbackURL: `http://localhost:${port}/`,
+                  disableRedirect: true,
+                });
+
+                if (!result?.data?.url)
+                  throw new Error("No OAuth URL returned");
+
+                oauthWindow = new WebviewWindow("oauth", {
+                  url: result.data.url,
+                  title: "Sign in with Google",
+                  width: 500,
+                  height: 700,
+                });
+              } catch (e) {
+                unlistenUrl?.();
+                oauthWindow?.close();
+                if (port !== undefined) await cancel(port).catch(() => {});
+                const msg = e instanceof Error ? e.message : String(e);
+                setError(`Could not start Google sign-in: ${msg}`);
+                setGoogleLoading(false);
+              }
             }}
           >
             <GoogleIcon className="size-5" aria-hidden={true} />
