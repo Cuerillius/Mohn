@@ -62,42 +62,58 @@ function mapResolution(raw: string | undefined): Resolution {
   return 'Unknown';
 }
 
-function parseSeeders(titleField: string | undefined): number | undefined {
-  if (!titleField) return undefined;
-  const match = titleField.match(/👤\s*(\d+)|Seeds?:?\s*(\d+)/i);
+// Returns stream.title if non-empty, else stream.description, else stream.name
+function primaryText(stream: AddonStream): string {
+  return stream.title?.trim() || stream.description?.trim() || stream.name?.trim() || '';
+}
+
+function parseSeeders(stream: AddonStream): number | undefined {
+  const text = primaryText(stream);
+  if (!text) return undefined;
+  const match = text.match(/👤\s*(\d+)|Seeds?:?\s*(\d+)/i);
   if (!match) return undefined;
   return parseInt(match[1] ?? match[2], 10);
 }
 
 function parseSize(stream: AddonStream): number | undefined {
   if (stream.behaviorHints?.videoSize) return stream.behaviorHints.videoSize;
-  const t = stream.title;
-  if (!t) return undefined;
-  const match = t.match(/([\d.]+)\s*(GB|MB)/i);
+  const text = primaryText(stream);
+  if (!text) return undefined;
+  const match = text.match(/([\d.]+)\s*(GB|MB)/i);
   if (!match) return undefined;
   const num = parseFloat(match[1]);
   return match[2].toUpperCase() === 'GB' ? num * 1024 * 1024 * 1024 : num * 1024 * 1024;
 }
 
 function extractRawName(stream: AddonStream): string {
-  // title field first line is typically the release name (e.g. Torrentio format)
-  const fromTitle = stream.title?.split('\n')[0]?.trim();
-  if (fromTitle && fromTitle.length > 5 && !fromTitle.startsWith('👤') && !fromTitle.startsWith('💾')) {
-    return fromTitle;
+  // Use the first line of the primary text field as the release name
+  const first = primaryText(stream).split('\n')[0]?.trim() ?? '';
+  if (first.length > 5 && !first.startsWith('👤') && !first.startsWith('💾')) {
+    return first;
   }
-  return stream.name?.split('\n')[0]?.trim() ?? stream.name ?? 'Unknown';
+  return 'Unknown';
 }
 
 export function enrichStream(stream: AddonStream): EnrichedStream {
-  const parsed = parseTorrentTitle(stream.name ?? '');
+  const rawName = extractRawName(stream);
+  const parsed = parseTorrentTitle(rawName) as {
+    title?: string;
+    resolution?: string;
+    codec?: string;
+    audio?: string;
+    quality?: string;
+  };
   return {
     ...stream,
-    parsedTitle: (parsed as { title?: string }).title ?? stream.name ?? 'Unknown',
-    rawName: extractRawName(stream),
-    resolution: mapResolution((parsed as { resolution?: string }).resolution),
+    parsedTitle: parsed.title ?? rawName,
+    rawName,
+    resolution: mapResolution(parsed.resolution),
     sizeBytes: parseSize(stream),
-    seeders: parseSeeders(stream.title),
+    seeders: parseSeeders(stream),
     cached: false,
+    parsedCodec: parsed.codec,
+    parsedAudio: parsed.audio,
+    parsedQuality: parsed.quality,
   };
 }
 

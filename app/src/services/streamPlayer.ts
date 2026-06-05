@@ -48,7 +48,13 @@ export class ExternalStreamPlayer implements StreamPlayerService {
   supportsResume = false;
 
   async loadFile(url: string): Promise<void> {
-    window.location.href = `vlc://${url.replace(/^https?:\/\//, "")}`;
+    const vlcUrl = `vlc://${url.replace(/^https?:\/\//, "")}`;
+    const a = document.createElement("a");
+    a.href = vlcUrl;
+    a.style.cssText = "display:none;position:fixed";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 0);
   }
 }
 

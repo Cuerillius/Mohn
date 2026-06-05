@@ -1,11 +1,20 @@
 import type {
   TorBoxCacheCheckResponse,
+  TorBoxControlTorrentResponse,
   TorBoxCreateTorrentResponse,
   TorBoxListResponse,
   TorBoxRequestDlResponse,
   TorBoxTorrentFile,
+  TorBoxTorrentItem,
   TorBoxUserResponse,
 } from '../types/torbox';
+
+export class SlotsFullError extends Error {
+  constructor() {
+    super('ACTIVE_LIMIT');
+    this.name = 'SlotsFullError';
+  }
+}
 
 const BASE = `${import.meta.env.VITE_GATEKEEPER_URL}/api/torbox`;
 
@@ -61,7 +70,28 @@ export async function checkCached(hashes: string[]): Promise<TorBoxCacheCheckRes
 export async function createTorrent(magnet: string): Promise<TorBoxCreateTorrentResponse> {
   const fd = new FormData();
   fd.append('magnet', magnet);
-  return torboxPostForm<TorBoxCreateTorrentResponse>('/torrents/createtorrent', fd);
+  const res = await torboxPostForm<TorBoxCreateTorrentResponse>('/torrents/createtorrent', fd);
+  if (!res.success && (res.detail === 'ACTIVE_LIMIT' || res.error === 'ACTIVE_LIMIT')) {
+    throw new SlotsFullError();
+  }
+  if (!res.success || !res.data) {
+    throw new Error(res.error ?? res.detail ?? 'Failed to create torrent');
+  }
+  // data is non-null here — the guard above throws if it's falsy
+  return res as typeof res & { data: NonNullable<typeof res.data> };
+}
+
+export async function listTorrents(): Promise<TorBoxTorrentItem[]> {
+  const res = await torboxGet<TorBoxListResponse>('/torrents/mylist?bypass_cache=true');
+  if (!res.data) return [];
+  return Array.isArray(res.data) ? res.data : [res.data];
+}
+
+export async function deleteTorrent(torrentId: number): Promise<void> {
+  await torboxPostJson<TorBoxControlTorrentResponse>('/torrents/controltorrent', {
+    torrent_id: torrentId,
+    operation: 'delete',
+  });
 }
 
 export async function getTorrent(torrentId: number): Promise<TorBoxListResponse> {
@@ -79,7 +109,7 @@ export async function createAndResolveLink(
   fileIdx: number | undefined,
 ): Promise<{ torrentId: number; fileId: number; url: string; mimetype?: string }> {
   const created = await createTorrent(magnet);
-  const torrentId = created.data.torrent_id;
+  const torrentId = created.data!.torrent_id;
 
   console.log('[torbox] polling torrent', torrentId);
   let files: TorBoxTorrentFile[] | undefined;

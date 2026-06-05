@@ -1,6 +1,7 @@
 export interface AddonStream {
   name?: string;
   title?: string;
+  description?: string;
   url?: string;
   infoHash?: string;
   fileIdx?: number;
@@ -25,6 +26,9 @@ export interface EnrichedStream extends AddonStream {
   sizeBytes?: number;
   seeders?: number;
   cached: boolean;
+  parsedCodec?: string;
+  parsedAudio?: string;
+  parsedQuality?: string;
 }
 
 export interface TorBoxCachedFile {
@@ -46,7 +50,14 @@ export interface TorBoxCacheCheckResponse {
 }
 
 export interface TorBoxCreateTorrentResponse {
-  data: { torrent_id: number };
+  success: boolean;
+  detail?: string;
+  error?: string;
+  data: { torrent_id: number } | null;
+}
+
+export interface TorBoxControlTorrentResponse {
+  success: boolean;
 }
 
 export interface TorBoxRequestDlResponse {
