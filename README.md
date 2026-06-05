@@ -1,35 +1,35 @@
 <p align="center">
-  <img src="jlkr/src-tauri/icons/icon.png" alt="Mohn" width="120" />
+  <img src="app/src-tauri/icons/icon.png" alt="Mohn" width="120" />
 </p>
 
 <h1 align="center">Mohn</h1>
 
-A desktop app for browsing and watching movies & TV shows. Find something, pick a source, hit play — no subscriptions, no ads, no nonsense.
+A desktop app / website for browsing and watching movies & TV shows.
 
-Built on top of the [TMDB](https://www.themoviedb.org/) catalog and Stremio-compatible add-ons for stream discovery. Debrid playback via [TorBox](https://torbox.app/) for fast, reliable streaming. Plays back through an embedded MPV player or your browser.
+Built on top of the [TMDB](https://www.themoviedb.org/) and Stremio-compatible add-ons for stream discovery. Debrid playback via [TorBox](https://torbox.app/) for fast, reliable streaming. Plays back through an embedded MPV player, your browser or external player.
 
 ---
 
 ## Features
 
 - **Browse & search** — trending, top-rated, by genre, or just search for anything
+- **Smart Recomendations** - based on your watch history and watchlists
 - **Multi-profile** — separate watch history and watchlists per profile
 - **Debrid streaming** — plug in a TorBox API key and stream cached torrents instantly
-- **Stremio add-ons** — compatible with any Stremio torrent add-on URL
-- **Flexible playback** — embedded MPV, browser player, HLS, or hand off to VLC
-- **Resume where you left off** — per-profile bookmark tracking
-- **Auth** — email/password or Google OAuth, powered by [better-auth](https://better-auth.com/)
+- **Stremio add-ons** — compatible with any Stremio torrent add-on
+- **Flexible playback** — embedded MPV, browser player or hand off to VLC
+- **Syncronisation** — everything is synced so switching from one device to another is frictionless
 
 ---
 
 ## Architecture
 
 ```
-jlkr/               — Tauri 2 desktop app (React + Vite + Tailwind)
-jlk-gatekeeper/     — Backend API (Cloudflare Workers + Hono + PostgreSQL)
+app/               — Tauri 2 desktop app (React + Vite + Tailwind)
+gatekeeper/        — Backend API (Cloudflare Workers + Hono + PostgreSQL)
 ```
 
-The backend acts as an authenticated proxy for TMDB and TorBox, so API keys never touch the client. Auth sessions are stored in PostgreSQL via Cloudflare Hyperdrive.
+The backend acts as an authenticated proxy for TMDB, so API keys never touch the client. Auth sessions are stored in PostgreSQL via Cloudflare Hyperdrive.
 
 ---
 
