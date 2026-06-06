@@ -24,12 +24,12 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            jlkr/src-tauri/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('jlkr/src-tauri/Cargo.lock') }}
+            app/src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('app/src-tauri/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Install frontend deps
-        working-directory: jlkr
+        working-directory: app
         run: bun install
 
       - uses: tauri-apps/tauri-action@v0
@@ -39,7 +39,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           VITE_GATEKEEPER_URL: ${{ secrets.VITE_GATEKEEPER_URL }}
         with:
-          projectPath: jlkr
+          projectPath: app
           tagName: ${{ github.ref_name }}
           releaseName: Mohn ${{ github.ref_name }}
           releaseBody: See the assets below to download this release.
@@ -55,7 +55,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - name: Install and build
-        working-directory: jlkr
+        working-directory: app
         env:
           VITE_GATEKEEPER_URL: ${{ secrets.VITE_GATEKEEPER_URL }}
         run: |
@@ -63,7 +63,7 @@ jobs:
           bun run build
 
       - name: Deploy to Cloudflare
-        working-directory: jlkr
+        working-directory: app
         run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -78,17 +78,17 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - name: Install deps
-        working-directory: jlk-gatekeeper
+        working-directory: gatekeeper
         run: bun install
 
       - name: Run migrations
-        working-directory: jlk-gatekeeper
+        working-directory: gatekeeper
         env:
           HYPERDRIVE_CONNECTION_STRING: ${{ secrets.DATABASE_URL }}
         run: bun run db:migrate
 
       - name: Deploy gatekeeper
-        working-directory: jlk-gatekeeper
+        working-directory: gatekeeper
         run: npx wrangler deploy --minify
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
