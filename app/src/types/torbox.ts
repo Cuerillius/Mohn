@@ -17,7 +17,7 @@ export interface AddonStreamResponse {
   streams: AddonStream[];
 }
 
-export type Resolution = '4K' | '1080p' | '720p' | 'SD' | 'Unknown';
+export type Resolution = '4K' | '1440p' | '1080p' | '720p' | '480p' | '360p' | '240p' | 'Unknown';
 
 export interface EnrichedStream extends AddonStream {
   parsedTitle: string;

@@ -369,7 +369,16 @@ function startTorrent(
     });
 }
 
-const RESOLUTION_ORDER: Resolution[] = ["4K", "1080p", "720p", "SD", "Unknown"];
+const RESOLUTION_ORDER: Resolution[] = [
+  "4K",
+  "1440p",
+  "1080p",
+  "720p",
+  "480p",
+  "360p",
+  "240p",
+  "Unknown",
+];
 
 export function formatTime(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return "00:00:00";
@@ -555,7 +564,9 @@ function StreamItem({
       {stream.cached === false && available && (
         <>
           <span>·</span>
-          <span className={`flex items-center gap-0.5 ${isSelected ? "" : "text-amber-500 font-medium"}`}>
+          <span
+            className={`flex items-center gap-0.5 ${isSelected ? "" : "text-amber-500 font-medium"}`}
+          >
             <Clock className="h-3 w-3" />
             uncached
           </span>
@@ -564,7 +575,7 @@ function StreamItem({
       {audioWarning && active && (
         <>
           <span>·</span>
-          <span className={isSelected ? "opacity-70" : "text-amber-500"}>{audioWarning}</span>
+          <span className={isSelected ? "opacity-70" : ""}>{audioWarning}</span>
         </>
       )}
     </div>
@@ -580,7 +591,9 @@ function StreamItem({
           className="w-full text-left px-3 py-2.5 rounded-lg border border-border/50 opacity-60 hover:opacity-80 transition-opacity cursor-pointer"
         >
           <div className="flex items-center justify-between gap-2">
-            <div className="text-sm leading-snug truncate text-foreground/70 min-w-0">{title}</div>
+            <div className="text-sm leading-snug truncate text-foreground/70 min-w-0">
+              {title}
+            </div>
             <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
           </div>
           <div className="flex items-center gap-x-1 text-[11px] mt-0.5 text-muted-foreground/50">
@@ -606,7 +619,9 @@ function StreamItem({
         className="w-full text-left px-3 py-2.5 rounded-lg border border-border/50 opacity-50 select-none"
         title={explain ?? undefined}
       >
-        <div className="text-sm leading-snug truncate text-foreground/70">{title}</div>
+        <div className="text-sm leading-snug truncate text-foreground/70">
+          {title}
+        </div>
         {metaRow(false)}
       </div>
     );
@@ -627,11 +642,15 @@ function StreamItem({
         className="flex-1 text-left px-3 py-2.5 cursor-pointer min-w-0"
       >
         <div className="flex items-center gap-2">
-          <div className={`text-sm leading-snug truncate flex-1 ${isSelected ? "" : "text-foreground"}`}>
+          <div
+            className={`text-sm leading-snug truncate flex-1 ${isSelected ? "" : "text-foreground"}`}
+          >
             {title}
           </div>
           {isSwitchingTo && (
-            <Loader className={`h-3.5 w-3.5 shrink-0 animate-spin ${isSelected ? "opacity-70" : "text-muted-foreground"}`} />
+            <Loader
+              className={`h-3.5 w-3.5 shrink-0 animate-spin ${isSelected ? "opacity-70" : "text-muted-foreground"}`}
+            />
           )}
         </div>
         {metaRow(true)}
@@ -760,11 +779,22 @@ export default function PlayerControls({
   function handleStartTorrent(stream: EnrichedStream) {
     setSlotsFullStream(null);
     startTorrent(stream, {
-      onPending: (s) => { setPendingStream(s); setTorrentProgress(null); setProgressError(null); },
+      onPending: (s) => {
+        setPendingStream(s);
+        setTorrentProgress(null);
+        setProgressError(null);
+      },
       onProgress: setTorrentProgress,
-      onDone: (s) => { setPendingStream(null); setTorrentProgress(null); onSelectStream(s); },
+      onDone: (s) => {
+        setPendingStream(null);
+        setTorrentProgress(null);
+        onSelectStream(s);
+      },
       onError: (msg) => setProgressError(msg),
-      onSlotsFull: (s) => { setPendingStream(null); setSlotsFullStream(s); },
+      onSlotsFull: (s) => {
+        setPendingStream(null);
+        setSlotsFullStream(s);
+      },
     });
   }
 
@@ -857,10 +887,16 @@ export default function PlayerControls({
                       key={ps.stream.infoHash ?? ps.stream.rawName}
                       ps={ps}
                       isSelected={selected?.infoHash === ps.stream.infoHash}
-                      isSwitchingTo={switchingTo?.infoHash === ps.stream.infoHash}
+                      isSwitchingTo={
+                        switchingTo?.infoHash === ps.stream.infoHash
+                      }
                       switching={switching}
                       platform={platform}
-                      onSelect={(s) => s.cached === false ? handleStartTorrent(s) : onSelectStream(s)}
+                      onSelect={(s) =>
+                        s.cached === false
+                          ? handleStartTorrent(s)
+                          : onSelectStream(s)
+                      }
                       onOpenExternal={onOpenExternal}
                     />
                   ))

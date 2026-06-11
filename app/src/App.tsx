@@ -21,6 +21,8 @@ import LoginPage from "./pages/LoginPage";
 import PlayerPage from "./pages/PlayerPage";
 import ProfileSwitchPage from "./pages/ProfileSwitchPage";
 import SettingsPage from "./pages/SettingsPage";
+import { useSettings } from "./context/SettingsContext";
+import OnboardingPage from "./pages/OnboardingPage";
 
 function WithNavbar() {
   return (
@@ -39,6 +41,13 @@ function RequireAuth() {
   return <Outlet />;
 }
 
+function RequireOnboarding() {
+  const { onboardingDone, loading } = useSettings();
+  if (loading) return <div className="min-h-screen bg-[#0f0f0f]" />;
+  if (!onboardingDone) return <Navigate to="/onboarding" replace />;
+  return <Outlet />;
+}
+
 function RequireProfile() {
   const hasProfile = Boolean(localStorage.getItem("mohn_profile"));
   if (!hasProfile) return <Navigate to="/profile" replace />;
@@ -51,10 +60,13 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<RequireAuth />}>
-        <Route path="/profile" element={<ProfileSwitchPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
 
-        <Route element={<RequireProfile />}>
+        <Route element={<RequireOnboarding />}>
+          <Route path="/profile" element={<ProfileSwitchPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+
+          <Route element={<RequireProfile />}>
           <Route element={<WithNavbar />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
@@ -66,6 +78,7 @@ function AppRoutes() {
             path="/play/:type/:id/:season/:episode"
             element={<PlayerPage />}
           />
+        </Route>
         </Route>
       </Route>
 

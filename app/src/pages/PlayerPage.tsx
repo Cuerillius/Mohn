@@ -290,7 +290,7 @@ export default function PlayerPage() {
         </div>
       )}
 
-      <BackButton onClick={() => navigate(-1)} />
+      {controlsVisible && <BackButton onClick={() => navigate(-1)} />}
 
       <PlayerControls {...sharedControls} controlsVisible={controlsVisible} />
     </div>

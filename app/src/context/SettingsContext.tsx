@@ -8,6 +8,7 @@ interface Settings {
   torboxKey: string;
   addonUrls: string[];
   inactiveAddonUrls: string[];
+  onboardingDone: boolean;
 }
 
 interface SettingsContextValue {
@@ -16,15 +17,18 @@ interface SettingsContextValue {
   addonUrls: string[];
   addAddonUrl: (url: string) => void;
   removeAddonUrl: (url: string) => void;
+  reorderAddonUrls: (urls: string[]) => void;
   inactiveAddonUrls: string[];
   toggleAddonUrl: (url: string) => void;
   activeAddonUrls: string[];
+  onboardingDone: boolean;
+  setOnboardingDone: () => void;
   loading: boolean;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
-const EMPTY: Settings = { torboxKey: "", addonUrls: [], inactiveAddonUrls: [] };
+const EMPTY: Settings = { torboxKey: "", addonUrls: [], inactiveAddonUrls: [], onboardingDone: false };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -37,6 +41,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         torboxKey: s.torboxKey ?? "",
         addonUrls: s.addonUrls ?? [],
         inactiveAddonUrls: s.inactiveAddonUrls ?? [],
+        onboardingDone: s.onboardingDone ?? false,
       })),
     enabled: !!user,
     staleTime: Infinity,
@@ -52,6 +57,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const setTorboxKey = (key: string) => applyPatch({ torboxKey: key });
 
+  const setOnboardingDone = () => applyPatch({ onboardingDone: true });
+
   const addAddonUrl = (url: string) =>
     applyPatch({ addonUrls: [...data.addonUrls, url] });
 
@@ -60,6 +67,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       addonUrls: data.addonUrls.filter((u) => u !== url),
       inactiveAddonUrls: data.inactiveAddonUrls.filter((u) => u !== url),
     });
+
+  const reorderAddonUrls = (urls: string[]) => applyPatch({ addonUrls: urls });
 
   const toggleAddonUrl = (url: string) =>
     applyPatch({
@@ -80,9 +89,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         addonUrls: data.addonUrls,
         addAddonUrl,
         removeAddonUrl,
+        reorderAddonUrls,
         inactiveAddonUrls: data.inactiveAddonUrls,
         toggleAddonUrl,
         activeAddonUrls,
+        onboardingDone: data.onboardingDone,
+        setOnboardingDone,
         loading: isLoading,
       }}
     >

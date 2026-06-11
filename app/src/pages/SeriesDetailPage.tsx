@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import MediaHero from "../components/MediaHero";
@@ -15,6 +15,7 @@ import {
 import { keys } from "../lib/queryKeys";
 import type { TMDBSeason } from "../types/tmdb";
 import { useWatchlist } from "../hooks/useWatchlist";
+import useWatchHistory from "../hooks/useWatchHistory";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ export default function SeriesDetailPage() {
   const [selectedSeason, setSelectedSeason] = useState(0);
   const [showTrailer, setShowTrailer] = useState(false);
   const { inList, toggle } = useWatchlist(id ?? "", "tv");
+  const { allHistory } = useWatchHistory();
 
   const numId = Number(id);
 
@@ -65,6 +67,48 @@ export default function SeriesDetailPage() {
   const seasons = seasonQueries
     .map((q) => q.data)
     .filter(Boolean) as TMDBSeason[];
+
+  // Build per-episode progress map from watch history
+  const episodeProgress = useMemo(() => {
+    const map = new Map<string, { position: number; duration: number }>();
+    allHistory
+      .filter((e) => e.mediaType === "tv" && e.tmdbId === numId)
+      .forEach((e) => {
+        const key = `${e.season}:${e.episode}`;
+        if (!map.has(key)) map.set(key, { position: e.position, duration: e.duration });
+      });
+    return map;
+  }, [allHistory, numId]);
+
+  // Find the next episode to watch (in-progress first, then first unwatched)
+  const nextToWatch = useMemo(() => {
+    if (!seasons.length) return { season: 1, episode: 1 };
+    // Prefer an in-progress episode
+    for (const s of seasons) {
+      for (const ep of s.episodes) {
+        const prog = episodeProgress.get(`${s.season_number}:${ep.episode_number}`);
+        if (prog && prog.position > 30 && prog.duration > 0 && prog.position / prog.duration < 0.9) {
+          return { season: s.season_number, episode: ep.episode_number };
+        }
+      }
+    }
+    // First episode not yet fully watched
+    for (const s of seasons) {
+      for (const ep of s.episodes) {
+        const prog = episodeProgress.get(`${s.season_number}:${ep.episode_number}`);
+        const isWatched = prog?.position === 0 && prog?.duration > 0;
+        if (!isWatched) return { season: s.season_number, episode: ep.episode_number };
+      }
+    }
+    return { season: 1, episode: 1 };
+  }, [seasons, episodeProgress]);
+
+  // Auto-select the season containing the next episode to watch
+  useEffect(() => {
+    if (!seasons.length) return;
+    const idx = seasons.findIndex((s) => s.season_number === nextToWatch.season);
+    if (idx >= 0) setSelectedSeason(idx);
+  }, [seasons.length > 0 ? seasons[0].season_number : null, nextToWatch.season]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const credits = [
     ...(show?.created_by?.length
@@ -110,8 +154,8 @@ export default function SeriesDetailPage() {
         onToggleTrailer={() => setShowTrailer((v) => !v)}
         overview={show?.overview}
         credits={credits}
-        primaryLabel="Play S1 E1"
-        onPlay={() => id && navigate(`/play/tv/${id}/1/1`)}
+        primaryLabel={`Play S${nextToWatch.season} E${nextToWatch.episode}`}
+        onPlay={() => id && navigate(`/play/tv/${id}/${nextToWatch.season}/${nextToWatch.episode}`)}
         inWatchlist={inList}
         onToggleWatchlist={toggle}
         onBack={() => navigate(-1)}
@@ -145,17 +189,24 @@ export default function SeriesDetailPage() {
 
           {currentSeason && (
             <div className="px-10 max-[900px]:px-6">
-              {currentSeason.episodes.map((ep) => (
-                <EpisodeRow
-                  key={ep.episode_number}
-                  episode={ep}
-                  onClick={() =>
-                    navigate(
-                      `/play/tv/${id}/${currentSeason.season_number}/${ep.episode_number}`,
-                    )
-                  }
-                />
-              ))}
+              {currentSeason.episodes.map((ep) => {
+                const prog = episodeProgress.get(`${currentSeason.season_number}:${ep.episode_number}`);
+                const isWatched = prog?.position === 0 && prog?.duration > 0;
+                const progress = prog && prog.duration > 0 ? prog.position / prog.duration : undefined;
+                return (
+                  <EpisodeRow
+                    key={ep.episode_number}
+                    episode={ep}
+                    watched={isWatched}
+                    progress={progress}
+                    onClick={() =>
+                      navigate(
+                        `/play/tv/${id}/${currentSeason.season_number}/${ep.episode_number}`,
+                      )
+                    }
+                  />
+                );
+              })}
             </div>
           )}
         </div>
