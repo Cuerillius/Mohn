@@ -36,13 +36,36 @@ export function parseMediaId(mediaId: string): {
 
 function parseEntries(entries: HistoryEntry[]) {
   const parsed = entries.map((e) => ({ ...e, ...parseMediaId(e.mediaId) }));
-  return {
-    allHistory: parsed,
-    inProgress: parsed.filter(
-      (e) => e.position > 30 && e.duration > 0 && e.position / e.duration < 0.9,
-    ),
-    finished: parsed.filter((e) => e.position === 0 && e.duration > 0),
-  };
+
+  const inProgress = parsed.filter(
+    (e) => e.position > 30 && e.duration > 0 && e.position / e.duration < 0.9,
+  );
+  const finished = parsed.filter((e) => e.position === 0 && e.duration > 0);
+
+  // For each unique TV show, the most recent episode to "continue".
+  // If the latest episode is finished, synthesize a next-episode entry (duration=0).
+  const tvSeen = new Set<number>();
+  const tvContinue = parsed
+    .filter((e) => e.mediaType === "tv")
+    .filter((e) => {
+      if (tvSeen.has(e.tmdbId)) return false;
+      tvSeen.add(e.tmdbId);
+      return true;
+    })
+    .filter((e) => {
+      const isInProgress = e.position > 30 && e.duration > 0 && e.position / e.duration < 0.9;
+      const isFinished = e.position === 0 && e.duration > 0;
+      return isInProgress || isFinished;
+    })
+    .map((e) => {
+      const isFinished = e.position === 0 && e.duration > 0;
+      if (isFinished && e.episode != null) {
+        return { ...e, episode: e.episode + 1, position: 0, duration: 0 };
+      }
+      return e;
+    });
+
+  return { allHistory: parsed, inProgress, finished, tvContinue };
 }
 
 export default function useWatchHistory() {
@@ -61,6 +84,7 @@ export default function useWatchHistory() {
     inProgress: data?.inProgress ?? [],
     finished: data?.finished ?? [],
     allHistory: data?.allHistory ?? [],
+    tvContinue: data?.tvContinue ?? [],
     isLoading,
   };
 }

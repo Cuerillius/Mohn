@@ -56,9 +56,12 @@ function mapResolution(raw: string | undefined): Resolution {
   if (!raw) return 'Unknown';
   const r = raw.toLowerCase();
   if (r === '2160p' || r === '4k' || r === 'uhd') return '4K';
+  if (r === '1440p' || r === '2k') return '1440p';
   if (r === '1080p' || r === '1080i') return '1080p';
-  if (r === '720p') return '720p';
-  if (r === '480p' || r === '576p' || r === '480i') return 'SD';
+  if (r === '720p' || r === '720i') return '720p';
+  if (r === '480p' || r === '480i' || r === '576p') return '480p';
+  if (r === '360p') return '360p';
+  if (r === '240p') return '240p';
   return 'Unknown';
 }
 
@@ -117,7 +120,7 @@ export function enrichStream(stream: AddonStream): EnrichedStream {
   };
 }
 
-const RESOLUTION_ORDER: Resolution[] = ['4K', '1080p', '720p', 'SD', 'Unknown'];
+const RESOLUTION_ORDER: Resolution[] = ['4K', '1440p', '1080p', '720p', '480p', '360p', '240p', 'Unknown'];
 
 export function groupByResolution(streams: EnrichedStream[]): Record<Resolution, EnrichedStream[]> {
   const groups = Object.fromEntries(RESOLUTION_ORDER.map((r) => [r, [] as EnrichedStream[]])) as Record<Resolution, EnrichedStream[]>;
@@ -135,13 +138,15 @@ export function groupByResolution(streams: EnrichedStream[]): Record<Resolution,
   return groups;
 }
 
-export function autoSelectStream(streams: EnrichedStream[]): EnrichedStream | null {
-  for (const r of RESOLUTION_ORDER) {
+export function autoSelectStream(streams: EnrichedStream[], platform?: string): EnrichedStream | null {
+  const preferred: Resolution = platform === 'tauri' ? '4K' : '1080p';
+  const order = [preferred, ...RESOLUTION_ORDER.filter((r) => r !== preferred)];
+  for (const r of order) {
     const group = streams.filter((s) => s.resolution === r);
     const cached = group.find((s) => s.cached);
     if (cached) return cached;
   }
-  for (const r of RESOLUTION_ORDER) {
+  for (const r of order) {
     const group = streams.filter((s) => s.resolution === r);
     if (group.length > 0) return group[0];
   }

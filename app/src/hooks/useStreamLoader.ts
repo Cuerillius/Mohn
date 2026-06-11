@@ -116,7 +116,7 @@ export function useStreamLoader({
         }
 
         setLoadingStep(3);
-        const best = autoSelectStream(enriched);
+        const best = autoSelectStream(enriched, platform);
         if (!best?.infoHash)
           throw new Error("Streams were found, but none matched your playback criteria or were playable.");
 

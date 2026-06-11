@@ -15,6 +15,34 @@
       "when": 1775207428929,
       "tag": "0001_volatile_hedge_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775300000000,
+      "tag": "0002_add_user_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775400000000,
+      "tag": "0003_watch_history_progress",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775500000000,
+      "tag": "0004_inactive_addon_urls",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775600000000,
+      "tag": "0005_onboarding_done",
+      "breakpoints": true
     }
   ]
 }

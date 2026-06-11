@@ -53,11 +53,16 @@ async function resolveContinueItems(
         };
       }
       const show = await getTV(e.tmdbId);
+      const progress = e.duration > 0 ? e.position / e.duration : 0;
+      const label = e.season != null && e.episode != null
+        ? `S${e.season} E${e.episode}`
+        : undefined;
       return {
         tmdbItem: { ...show, media_type: "tv" as const },
-        progress: e.duration > 0 ? e.position / e.duration : 0,
+        progress,
         season: e.season,
         episode: e.episode,
+        label,
       };
     }),
   );
@@ -105,7 +110,7 @@ async function resolveWatchAgainItems(
 export default function useHomeData() {
   const { profile } = useProfile();
   const profileId = profile?.id ?? "";
-  const { inProgress, finished, allHistory } = useWatchHistory();
+  const { inProgress, finished, allHistory, tvContinue } = useWatchHistory();
 
   // ── Static TMDB data ────────────────────────────────────────────────────
 
@@ -185,13 +190,20 @@ export default function useHomeData() {
   });
 
   // ── Continue watching ───────────────────────────────────────────────────
-
-  const inProgressIds = inProgress.map((e) => e.mediaId);
+  // Combine in-progress movies with tvContinue (handles both in-progress and
+  // next-episode-after-finishing for TV shows).
+  const movieInProgress = inProgress.filter((e) => e.mediaType !== "tv");
+  const continueEntries = [...movieInProgress, ...tvContinue];
+  const continueKeys = continueEntries.map((e) =>
+    e.mediaType === "tv"
+      ? `tv:${e.tmdbId}:${e.season ?? 1}:${e.episode ?? 1}`
+      : e.mediaId,
+  );
 
   const { data: continueItemsRaw = [] } = useQuery({
-    queryKey: keys.continueItems(profileId, inProgressIds),
-    queryFn: () => resolveContinueItems(inProgress),
-    enabled: inProgress.length > 0,
+    queryKey: keys.continueItems(profileId, continueKeys),
+    queryFn: () => resolveContinueItems(continueEntries),
+    enabled: continueEntries.length > 0,
     staleTime: 60 * 1000,
   });
 
