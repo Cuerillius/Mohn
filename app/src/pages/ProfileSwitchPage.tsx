@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Profile, useProfile } from "../context/ProfileContext";
@@ -7,25 +6,27 @@ import { Skeleton } from "../components/ui/skeleton";
 import Avatar from "@/components/Avatar";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ProfileSwitchPage() {
   const navigate = useNavigate();
   const { setProfile } = useProfile();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [error, setError] = useState("");
-  const [loadingFetch, setLoadingFetch] = useState(true);
 
-  useEffect(() => {
-    apiGet<Profile[]>("/api/profiles")
-      .then(setProfiles)
-      .catch(() => setError("Could not load profiles"))
-      .finally(() => setLoadingFetch(false));
-  }, []);
+  const {
+    data: profiles,
+    isPending,
+    error,
+  } = useQuery({
+    queryKey: ["profiles"],
+    queryFn: () => apiGet<Profile[]>("/api/profiles"),
+  });
 
   if (error) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-red-400">
+          {error?.message || "Could not load profiles"}
+        </p>
       </div>
     );
   }
@@ -36,7 +37,7 @@ export default function ProfileSwitchPage() {
         size="icon-lg"
         variant="ghost"
         onClick={() => navigate("/settings")}
-        className="absolute top-4 right-4"
+        className="absolute top-8 right-8 rounded-full"
       >
         <Settings />
       </Button>
@@ -45,7 +46,7 @@ export default function ProfileSwitchPage() {
       </h1>
 
       <div className="flex flex-wrap items-start justify-center gap-6">
-        {loadingFetch
+        {isPending
           ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="flex flex-col items-center gap-3">
                 <Skeleton className="size-28 rounded-2xl" />

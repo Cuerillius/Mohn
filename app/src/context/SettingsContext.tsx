@@ -8,7 +8,7 @@ interface Settings {
   torboxKey: string;
   addonUrls: string[];
   inactiveAddonUrls: string[];
-  onboardingDone: boolean;
+  onboardingStep: number;
 }
 
 interface SettingsContextValue {
@@ -21,14 +21,14 @@ interface SettingsContextValue {
   inactiveAddonUrls: string[];
   toggleAddonUrl: (url: string) => void;
   activeAddonUrls: string[];
-  onboardingDone: boolean;
-  setOnboardingDone: () => void;
+  onboardingStep: number;
+  setOnboardingStep: (step: number) => void;
   loading: boolean;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
-const EMPTY: Settings = { torboxKey: "", addonUrls: [], inactiveAddonUrls: [], onboardingDone: false };
+const EMPTY: Settings = { torboxKey: "", addonUrls: [], inactiveAddonUrls: [], onboardingStep: 1 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -41,7 +41,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         torboxKey: s.torboxKey ?? "",
         addonUrls: s.addonUrls ?? [],
         inactiveAddonUrls: s.inactiveAddonUrls ?? [],
-        onboardingDone: s.onboardingDone ?? false,
+        onboardingStep: s.onboardingStep ?? 1,
       })),
     enabled: !!user,
     staleTime: Infinity,
@@ -57,7 +57,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const setTorboxKey = (key: string) => applyPatch({ torboxKey: key });
 
-  const setOnboardingDone = () => applyPatch({ onboardingDone: true });
+  const setOnboardingStep = (step: number) => applyPatch({ onboardingStep: step });
 
   const addAddonUrl = (url: string) =>
     applyPatch({ addonUrls: [...data.addonUrls, url] });
@@ -93,8 +93,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         inactiveAddonUrls: data.inactiveAddonUrls,
         toggleAddonUrl,
         activeAddonUrls,
-        onboardingDone: data.onboardingDone,
-        setOnboardingDone,
+        onboardingStep: data.onboardingStep,
+        setOnboardingStep,
         loading: isLoading,
       }}
     >

@@ -1,3 +1,5 @@
+import { isTauri } from "./lib/platform";
+const AppRouter = isTauri ? MemoryRouter : BrowserRouter;
 import {
   MemoryRouter,
   BrowserRouter,
@@ -6,13 +8,11 @@ import {
   Navigate,
   Outlet,
 } from "react-router-dom";
-
-const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
-const AppRouter = isTauri ? MemoryRouter : BrowserRouter;
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ProfileProvider } from "./context/ProfileContext";
+import { ProfileProvider, useProfile } from "./context/ProfileContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import Navbar from "./components/Navbar";
+import ConfigWarningBanner from "./components/ConfigWarningBanner";
 import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
 import MovieDetailPage from "./pages/MovieDetailPage";
@@ -23,11 +23,14 @@ import ProfileSwitchPage from "./pages/ProfileSwitchPage";
 import SettingsPage from "./pages/SettingsPage";
 import { useSettings } from "./context/SettingsContext";
 import OnboardingPage from "./pages/OnboardingPage";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 
 function WithNavbar() {
   return (
     <>
       <Navbar />
+      <ConfigWarningBanner />
       <Outlet />
     </>
   );
@@ -35,21 +38,27 @@ function WithNavbar() {
 
 function RequireAuth() {
   const { user, loading } = useAuth();
-  // While session check is in-flight, render blank to avoid flash
-  if (loading) return <div className="min-h-screen bg-[#0f0f0f]" />;
+  if (loading) return <div className="min-h-screen bg-background" />;
   if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
 
+function RedirectIfAuth() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen bg-background" />;
+  if (user) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
 function RequireOnboarding() {
-  const { onboardingDone, loading } = useSettings();
-  if (loading) return <div className="min-h-screen bg-[#0f0f0f]" />;
-  if (!onboardingDone) return <Navigate to="/onboarding" replace />;
+  const { onboardingStep, loading } = useSettings();
+  if (loading) return <div className="min-h-screen bg-background" />;
+  if (onboardingStep !== -1) return <Navigate to="/onboarding" replace />;
   return <Outlet />;
 }
 
 function RequireProfile() {
-  const hasProfile = Boolean(localStorage.getItem("mohn_profile"));
+  const { hasProfile } = useProfile();
   if (!hasProfile) return <Navigate to="/profile" replace />;
   return <Outlet />;
 }
@@ -57,28 +66,29 @@ function RequireProfile() {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-
+      <Route element={<RedirectIfAuth />}>
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
       <Route element={<RequireAuth />}>
         <Route path="/onboarding" element={<OnboardingPage />} />
 
         <Route element={<RequireOnboarding />}>
           <Route path="/profile" element={<ProfileSwitchPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
 
           <Route element={<RequireProfile />}>
-          <Route element={<WithNavbar />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/movie/:id" element={<MovieDetailPage />} />
-            <Route path="/tv/:id" element={<SeriesDetailPage />} />
+            <Route element={<WithNavbar />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/movie/:id" element={<MovieDetailPage />} />
+              <Route path="/tv/:id" element={<SeriesDetailPage />} />
+            </Route>
+            <Route path="/play/:type/:id" element={<PlayerPage />} />
+            <Route
+              path="/play/:type/:id/:season/:episode"
+              element={<PlayerPage />}
+            />
           </Route>
-          <Route path="/play/:type/:id" element={<PlayerPage />} />
-          <Route
-            path="/play/:type/:id/:season/:episode"
-            element={<PlayerPage />}
-          />
-        </Route>
         </Route>
       </Route>
 
@@ -89,14 +99,16 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ProfileProvider>
-        <SettingsProvider>
-          <AppRouter>
-            <AppRoutes />
-          </AppRouter>
-        </SettingsProvider>
-      </ProfileProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <ProfileProvider>
+          <SettingsProvider>
+            <AppRouter>
+              <AppRoutes />
+            </AppRouter>
+          </SettingsProvider>
+        </ProfileProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

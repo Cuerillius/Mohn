@@ -1,4 +1,5 @@
 import { Check, Loader } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Step {
   title: string;
@@ -22,20 +23,22 @@ export default function MultiStepLoader({
           <div key={index} className="relative pb-8 pl-12 last:pb-0">
             {index !== steps.length - 1 && (
               <div
-                className={`absolute left-3.75 top-8 bottom-0 w-0.5 -translate-x-1/2 rounded-full transition-colors duration-300 ${
-                  isCompleted ? "bg-white/30" : "bg-accent"
-                }`}
+                className={cn(
+                  "absolute left-3.75 top-8 bottom-0 w-0.5 -translate-x-1/2 rounded-full transition-colors duration-300",
+                  isCompleted ? "bg-foreground/40" : "bg-foreground/10",
+                )}
               />
             )}
 
             <div
-              className={`absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors duration-300 ${
+              className={cn(
+                "absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all duration-300",
                 isCompleted
-                  ? "bg-white/30 text-white"
+                  ? "bg-foreground text-background"
                   : isActive
-                    ? "bg-white text-black"
-                    : "bg-accent text-white"
-              }`}
+                    ? "bg-foreground text-background ring-4 ring-foreground/10"
+                    : "bg-foreground/10 text-foreground/30",
+              )}
             >
               {isCompleted ? (
                 <Check className="h-4 w-4" strokeWidth={3} />
@@ -48,17 +51,18 @@ export default function MultiStepLoader({
 
             <div className="flex flex-col pt-1.5">
               <span
-                className={`text-sm font-semibold transition-colors duration-300 ${
+                className={cn(
+                  "text-sm font-semibold transition-colors duration-300",
                   isActive
-                    ? "text-white"
+                    ? "text-foreground"
                     : isCompleted
-                      ? "text-white/70"
-                      : "text-white/40"
-                }`}
+                      ? "text-foreground/70"
+                      : "text-foreground/30",
+                )}
               >
                 {step.title}
               </span>
-              <span className="text-sm text-white/40 mt-0.5">
+              <span className="text-xs text-muted-foreground mt-0.5">
                 {step.description}
               </span>
             </div>

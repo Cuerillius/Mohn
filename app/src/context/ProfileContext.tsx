@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState } from "react";
 
 export interface Profile {
   id: string;
@@ -9,12 +9,13 @@ export interface Profile {
 }
 
 interface ProfileContextValue {
+  hasProfile: boolean;
   profile: Profile | null;
   setProfile: (p: Profile | null) => void;
   clearProfile: () => void;
 }
 
-const STORAGE_KEY = 'mohn_profile';
+const STORAGE_KEY = "mohn_profile";
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,8 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
+  const hasProfile = profile !== null;
+
   const setProfile = (p: Profile | null) => {
     if (p) localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
     else localStorage.removeItem(STORAGE_KEY);
@@ -36,7 +39,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const clearProfile = () => setProfile(null);
 
   return (
-    <ProfileContext.Provider value={{ profile, setProfile, clearProfile }}>
+    <ProfileContext.Provider
+      value={{ profile, setProfile, clearProfile, hasProfile }}
+    >
       {children}
     </ProfileContext.Provider>
   );
@@ -44,6 +49,6 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
 export function useProfile() {
   const ctx = useContext(ProfileContext);
-  if (!ctx) throw new Error('useProfile must be used inside ProfileProvider');
+  if (!ctx) throw new Error("useProfile must be used inside ProfileProvider");
   return ctx;
 }

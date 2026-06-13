@@ -12,41 +12,30 @@ export interface MediaHeroCredit {
 export interface MediaHeroProps {
   backdropPath: string | null;
 
-  // Identity
   title: string;
   logoUrl?: string | null;
   tagline?: string;
 
-  // Meta row
   year?: string;
   rating?: number;
-  /** Formatted string for runtime ("2h 15m") or season count ("3 seasons") */
   metaExtra?: string;
   genre?: string;
 
-  // Trailer
   trailerKey?: string | null;
   showTrailer?: boolean;
   onToggleTrailer?: () => void;
 
-  // Content
   overview?: string;
   credits?: MediaHeroCredit[];
 
-  // Actions
   primaryLabel?: string;
   onPlay?: () => void;
-  /** Pass undefined to hide the watchlist button */
   inWatchlist?: boolean;
   onToggleWatchlist?: () => void;
-  /** Optional extra action buttons (e.g. "More info" on homepage) */
   extraActions?: ReactNode;
 
-  // Chrome
   onBack?: () => void;
-  /** h-screen for detail pages, h-[80vh] for the home carousel */
   fullHeight?: boolean;
-  /** Forwarded to the root element — use "shrink-0 w-full" inside carousel */
   className?: string;
 }
 
@@ -81,7 +70,6 @@ export default function MediaHero({
     <div
       className={`relative ${heightClass} overflow-hidden bg-card ${className}`}
     >
-      {/* Backdrop or trailer */}
       {showTrailer && trailerKey ? (
         // @ts-ignore — lite-youtube is a custom element
         <lite-youtube
@@ -99,15 +87,12 @@ export default function MediaHero({
         )
       )}
 
-      {/* Solid bar covers YouTube branding in trailer mode */}
       {showTrailer && (
         <div className="absolute top-0 left-0 right-0 h-[52px] bg-background pointer-events-none z-10" />
       )}
 
-      {/* Bottom-up gradient — always visible */}
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/10 pointer-events-none" />
 
-      {/* Back button — fixed so it stays top-left while scrolling */}
       {onBack && (
         <button
           onClick={onBack}
@@ -118,9 +103,7 @@ export default function MediaHero({
         </button>
       )}
 
-      {/* Info stack pinned to bottom */}
       <div className="absolute bottom-0 left-0 right-0 px-10 pb-10 max-w-3xl max-[900px]:px-6 max-[900px]:pb-8">
-        {/* Logo / title + tagline + meta — hidden while trailer plays */}
         {!showTrailer && (
           <>
             {logoUrl ? (
@@ -175,7 +158,6 @@ export default function MediaHero({
           </>
         )}
 
-        {/* Action buttons — always visible */}
         <div className="flex gap-3 mb-5 flex-wrap">
           {onPlay && (
             <button
@@ -213,14 +195,12 @@ export default function MediaHero({
           {extraActions}
         </div>
 
-        {/* Overview — always visible */}
         {overview && (
           <p className="text-sm text-white/65 leading-relaxed line-clamp-3 mb-4 max-w-xl">
             {overview}
           </p>
         )}
 
-        {/* Credits row — always visible */}
         {credits && credits.length > 0 && (
           <div className="flex gap-8 text-sm flex-wrap">
             {credits.map((c) => (

@@ -24,4 +24,6 @@ export const keys = {
   watchAgainItems: (profileId: string, mediaIds: string[]) =>
     ["watchAgainItems", profileId, mediaIds] as const,
   search: (q: string) => ["search", q] as const,
+  torboxPlan: () => ["torboxPlan"] as const,
+  addonManifest: (url: string) => ["addonManifest", url] as const,
 };
