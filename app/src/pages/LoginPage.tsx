@@ -1,103 +1,55 @@
-import { useState, JSX, SVGProps } from "react";
-import { useNavigate } from "react-router-dom";
-import { authClient, signIn, signUp, getSession } from "../lib/authClient";
-import { useAuth } from "../context/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
-import { apiPost } from "../services/api";
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { keys } from "../lib/queryKeys";
-
-const GoogleIcon = (
-  props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>,
-) => (
-  <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
-    <path d="M3.06364 7.50914C4.70909 4.24092 8.09084 2 12 2C14.6954 2 16.959 2.99095 18.6909 4.60455L15.8227 7.47274C14.7864 6.48185 13.4681 5.97727 12 5.97727C9.39542 5.97727 7.19084 7.73637 6.40455 10.1C6.2045 10.7 6.09086 11.3409 6.09086 12C6.09086 12.6591 6.2045 13.3 6.40455 13.9C7.19084 16.2636 9.39542 18.0227 12 18.0227C13.3454 18.0227 14.4909 17.6682 15.3864 17.0682C16.4454 16.3591 17.15 15.3 17.3818 14.05H12V10.1818H21.4181C21.5364 10.8363 21.6 11.5182 21.6 12.2273C21.6 15.2727 20.5091 17.8363 18.6181 19.5773C16.9636 21.1046 14.7 22 12 22C8.09084 22 4.70909 19.7591 3.06364 16.4909C2.38638 15.1409 2 13.6136 2 12C2 10.3864 2.38638 8.85911 3.06364 7.50914Z" />
-  </svg>
-);
+import { GoogleIcon } from "@/lib/icons";
+import { Mode, useAuthActions } from "@/hooks/useAuthActions";
 
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const { setUser } = useAuth();
-  const queryClient = useQueryClient();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const {
+    handleEmailSubmit,
+    handleGoogleSignIn,
+    loading,
+    googleLoading,
+    error,
+  } = useAuthActions();
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      if (mode === "signin") {
-        const { data, error: err } = await signIn.email({ email, password });
-        if (err || !data?.user) {
-          setError(err?.message ?? "Sign in failed");
-          return;
-        }
-        setUser({
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-        });
-      } else {
-        const { data, error: err } = await signUp.email({
-          email,
-          password,
-          name,
-        });
-        if (err || !data?.user) {
-          setError(err?.message ?? "Sign up failed");
-          return;
-        }
-        setUser({
-          id: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-        });
-        await apiPost("/api/profiles", { name: data.user.name }).catch(
-          () => {},
-        );
-      }
-      navigate("/profile");
-    } catch {
-      setError("Network error — please try again.");
-    } finally {
-      setLoading(false);
-    }
+    handleEmailSubmit(mode, { email, password, name });
+  };
+
+  const switchMode = () => {
+    setMode((m) => (m === "signin" ? "signup" : "signin"));
   };
 
   return (
     <div className="flex items-center justify-center min-h-dvh">
       <div className="flex flex-1 flex-col justify-center px-4 py-10 lg:px-6">
         <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4">
             <img src="/mohn.svg" alt="Mohn" className="size-16" />
           </div>
-          <h2 className="text-balance text-center text-xl font-semibold text-foreground">
-            {mode === "signin" ? "Sign in" : "Sign up"}
+
+          <h2 className="text-balance text-center text-xl font-semibold">
+            {mode === "signin" ? "Sign in to Mohn" : "Sign up to Mohn"}
           </h2>
+
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             {mode === "signup" && (
               <div>
-                <Label
-                  htmlFor="name-login-02"
-                  className="text-sm font-medium text-foreground dark:text-foreground"
-                >
-                  Name
-                </Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
+                  id="name"
                   type="text"
-                  id="name-login-02"
-                  name="name-login-02"
                   autoComplete="name"
-                  placeholder="Your Name"
+                  placeholder="John"
                   className="mt-2"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -105,38 +57,28 @@ export default function LoginPage() {
                 />
               </div>
             )}
+
             <div>
-              <Label
-                htmlFor="email-login-02"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Email
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <Input
+                id="email"
                 type="email"
-                id="email-login-02"
-                name="email-login-02"
                 autoComplete="email"
-                placeholder="example@example.com"
+                placeholder="john@example.com"
                 className="mt-2"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
+
             <div>
-              <Label
-                htmlFor="password-login-02"
-                className="text-sm font-medium text-foreground dark:text-foreground"
-              >
-                Password
-              </Label>
+              <Label htmlFor="password">Password</Label>
               <Input
+                id="password"
                 type="password"
-                id="password-login-02"
-                name="password-login-02"
-                autoComplete="password"
-                placeholder="**************"
+                autoComplete="current-password"
+                placeholder="Must be at least 8 characters"
                 className="mt-2"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -145,18 +87,14 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <p className="text-[13px] text-destructive mt-1 text-center bg-destructive/10 py-2 rounded-md">
+              <p className="text-[13px] text-destructive text-center bg-destructive/10 py-2 rounded-md">
                 {error}
               </p>
             )}
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="mt-4 w-full py-2 font-medium"
-            >
+            <Button type="submit" disabled={loading} className="mt-4 w-full">
               {loading
-                ? "Please wait..."
+                ? "Please wait…"
                 : mode === "signin"
                   ? "Sign in"
                   : "Sign up"}
@@ -176,91 +114,13 @@ export default function LoginPage() {
 
           <Button
             variant="outline"
-            className="flex w-full items-center justify-center space-x-2 py-2"
+            className="flex w-full items-center justify-center gap-2"
             disabled={googleLoading}
-            onClick={async () => {
-              setGoogleLoading(true);
-              setError("");
-
-              const isTauri = Boolean((window as any).__TAURI_INTERNALS__);
-              if (!isTauri) {
-                await authClient.signIn.social({
-                  provider: "google",
-                  callbackURL: `${window.location.origin}/profile`,
-                });
-                setGoogleLoading(false);
-                return;
-              }
-
-              const { start, cancel, onUrl } =
-                await import("@fabianlars/tauri-plugin-oauth");
-              const { WebviewWindow } =
-                await import("@tauri-apps/api/webviewWindow");
-
-              let port: number | undefined;
-              let unlistenUrl: (() => void) | undefined;
-              let oauthWindow: InstanceType<typeof WebviewWindow> | undefined;
-
-              try {
-                port = await start();
-
-                unlistenUrl = await onUrl(async () => {
-                  unlistenUrl?.();
-                  await oauthWindow?.close();
-                  if (port !== undefined) await cancel(port).catch(() => {});
-
-                  await queryClient.invalidateQueries({
-                    queryKey: keys.session(),
-                  });
-                  const { data } = await getSession();
-                  if (data?.user) {
-                    setUser({
-                      id: data.user.id,
-                      email: data.user.email,
-                      name: data.user.name,
-                    });
-                    navigate("/profile");
-                  } else {
-                    setError("Google sign-in failed — please try again.");
-                  }
-                  setGoogleLoading(false);
-                });
-
-                const result = await (
-                  authClient.signIn.social as (
-                    opts: unknown,
-                  ) => Promise<{
-                    data?: { url?: string } | null;
-                    error?: unknown;
-                  } | null>
-                )({
-                  provider: "google",
-                  callbackURL: `http://localhost:${port}/`,
-                  disableRedirect: true,
-                });
-
-                if (!result?.data?.url)
-                  throw new Error("No OAuth URL returned");
-
-                oauthWindow = new WebviewWindow("oauth", {
-                  url: result.data.url,
-                  title: "Sign in with Google",
-                  width: 500,
-                  height: 700,
-                });
-              } catch (e) {
-                unlistenUrl?.();
-                oauthWindow?.close();
-                if (port !== undefined) await cancel(port).catch(() => {});
-                const msg = e instanceof Error ? e.message : String(e);
-                setError(`Could not start Google sign-in: ${msg}`);
-                setGoogleLoading(false);
-              }
-            }}
+            onClick={handleGoogleSignIn}
           >
-            <GoogleIcon className="size-5" aria-hidden={true} />
+            <GoogleIcon className="size-5" aria-hidden />
             <span className="text-sm font-medium">
-              {googleLoading ? "Redirecting..." : "Sign in with Google"}
+              {googleLoading ? "Redirecting…" : "Sign in with Google"}
             </span>
           </Button>
 
@@ -270,11 +130,8 @@ export default function LoginPage() {
               : "Already have an account? "}
             <button
               type="button"
-              onClick={() => {
-                setMode(mode === "signin" ? "signup" : "signin");
-                setError("");
-              }}
-              className="font-medium text-foreground hover:underline underline-offset-4"
+              onClick={switchMode}
+              className="font-medium text-foreground hover:underline"
             >
               {mode === "signin" ? "Sign up" : "Sign in"}
             </button>

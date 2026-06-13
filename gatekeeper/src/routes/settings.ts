@@ -25,13 +25,13 @@ settings.get('/', async (c) => {
       console.log('[GET /api/settings] creating default row')
       const [created] = await db
         .insert(schema.userSettings)
-        .values({ userId: session.user.id, torboxKey: '', addonUrls: '[]', inactiveAddonUrls: '[]', onboardingDone: false, updatedAt: new Date() })
+        .values({ userId: session.user.id, torboxKey: '', addonUrls: '[]', inactiveAddonUrls: '[]', onboardingStep: 1, updatedAt: new Date() })
         .returning()
       return c.json({
         torboxKey: created.torboxKey,
         addonUrls: JSON.parse(created.addonUrls) as string[],
         inactiveAddonUrls: JSON.parse(created.inactiveAddonUrls) as string[],
-        onboardingDone: created.onboardingDone,
+        onboardingStep: created.onboardingStep,
       })
     }
 
@@ -39,7 +39,7 @@ settings.get('/', async (c) => {
       torboxKey: existing.torboxKey,
       addonUrls: JSON.parse(existing.addonUrls) as string[],
       inactiveAddonUrls: JSON.parse(existing.inactiveAddonUrls) as string[],
-      onboardingDone: existing.onboardingDone,
+      onboardingStep: existing.onboardingStep,
     })
   } catch (err) {
     console.error('[GET /api/settings] error', err)
@@ -53,7 +53,7 @@ settings.patch(
     torboxKey: z.string().optional(),
     addonUrls: z.array(z.string()).optional(),
     inactiveAddonUrls: z.array(z.string()).optional(),
-    onboardingDone: z.boolean().optional(),
+    onboardingStep: z.number().int().optional(),
   })),
   async (c) => {
     const session = await getSession(c)
@@ -77,7 +77,7 @@ settings.patch(
         if (body.torboxKey !== undefined) set.torboxKey = body.torboxKey
         if (body.addonUrls !== undefined) set.addonUrls = JSON.stringify(body.addonUrls)
         if (body.inactiveAddonUrls !== undefined) set.inactiveAddonUrls = JSON.stringify(body.inactiveAddonUrls)
-        if (body.onboardingDone !== undefined) set.onboardingDone = body.onboardingDone
+        if (body.onboardingStep !== undefined) set.onboardingStep = body.onboardingStep
         await db.update(schema.userSettings).set(set).where(eq(schema.userSettings.userId, session.user.id))
       } else {
         console.log('[PATCH /api/settings] inserting new row')
@@ -86,7 +86,7 @@ settings.patch(
           torboxKey: body.torboxKey ?? '',
           addonUrls: body.addonUrls ? JSON.stringify(body.addonUrls) : '[]',
           inactiveAddonUrls: body.inactiveAddonUrls ? JSON.stringify(body.inactiveAddonUrls) : '[]',
-          onboardingDone: body.onboardingDone ?? false,
+          onboardingStep: body.onboardingStep ?? 1,
           updatedAt: now,
         })
       }
