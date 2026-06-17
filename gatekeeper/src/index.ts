@@ -6,6 +6,7 @@ import profiles from "./routes/profiles";
 import history from "./routes/history";
 import watchlist from "./routes/watchlist";
 import settings from "./routes/settings";
+import account from "./routes/account";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -13,7 +14,7 @@ const TAURI_ORIGINS = ["https://tauri.localhost", "tauri://localhost"];
 
 app.use("*", (c, next) => {
   const allowedOrigins = [
-    ...(c.env.FRONTEND_URL?.split(",") ?? []),
+    ...(c.env.VITE_APP_URL?.split(",") ?? []),
     ...TAURI_ORIGINS,
   ];
   return cors({
@@ -32,6 +33,7 @@ app.route("/api/profiles", profiles);
 app.route("/api/profiles/:profileId/history", history);
 app.route("/api/profiles/:profileId/watchlist", watchlist);
 app.route("/api/settings", settings);
+app.route("/api/account", account);
 
 export type AppType = typeof app;
 export default app;

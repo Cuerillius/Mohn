@@ -37,7 +37,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          VITE_GATEKEEPER_URL: ${{ secrets.VITE_GATEKEEPER_URL }}
+          VITE_GATEKEEPER_URL: ${{ vars.VITE_GATEKEEPER_URL }}
+          VITE_LANDING_URL: ${{ vars.VITE_LANDING_URL }}
+          APP_VERSION: ${{ github.ref_name }}
         with:
           projectPath: app
           tagName: ${{ github.ref_name }}
@@ -57,14 +59,46 @@ jobs:
       - name: Install and build
         working-directory: app
         env:
-          VITE_GATEKEEPER_URL: ${{ secrets.VITE_GATEKEEPER_URL }}
+          VITE_GATEKEEPER_URL: ${{ vars.VITE_GATEKEEPER_URL }}
+          VITE_LANDING_URL: ${{ vars.VITE_LANDING_URL }}
+          APP_VERSION: ${{ github.ref_name }}
         run: |
           bun install
           bun run build
 
       - name: Deploy to Cloudflare
         working-directory: app
-        run: npx wrangler deploy
+        run: |
+          npx wrangler deploy \
+            --var "VITE_GATEKEEPER_URL:${{ vars.VITE_GATEKEEPER_URL }}" \
+            --var "VITE_LANDING_URL:${{ vars.VITE_LANDING_URL }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  deploy-landing:
+    name: Deploy Landing Page
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install and build
+        working-directory: landing
+        env:
+          VITE_APP_URL: ${{ vars.VITE_APP_URL }}
+          VITE_LANDING_URL: ${{ vars.VITE_LANDING_URL }}
+        run: |
+          bun install
+          bun run build
+
+      - name: Deploy to Cloudflare Pages
+        working-directory: landing
+        run: |
+          npx wrangler pages deploy dist \
+            --project-name mohn-landing \
+            --branch main
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -87,18 +121,33 @@ jobs:
           HYPERDRIVE_CONNECTION_STRING: ${{ secrets.DATABASE_URL }}
         run: bun run db:migrate
 
-      - name: Push secrets
+      - name: Push secrets to worker
         working-directory: gatekeeper
-        run: |
-          echo "${{ secrets.BETTER_AUTH_URL }}" | npx wrangler secret put BETTER_AUTH_URL
-          echo "${{ secrets.BETTER_AUTH_SECRET }}" | npx wrangler secret put BETTER_AUTH_SECRET
-          echo "${{ secrets.TMDB_API_TOKEN }}" | npx wrangler secret put TMDB_API_TOKEN
-          echo "${{ secrets.FRONTEND_URL }}" | npx wrangler secret put FRONTEND_URL
-          echo "${{ secrets.GOOGLE_CLIENT_ID }}" | npx wrangler secret put GOOGLE_CLIENT_ID
-          echo "${{ secrets.GOOGLE_CLIENT_SECRET }}" | npx wrangler secret put GOOGLE_CLIENT_SECRET
         env:
+          VITE_GATEKEEPER_URL: ${{ vars.VITE_GATEKEEPER_URL }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          TMDB_API_TOKEN: ${{ secrets.TMDB_API_TOKEN }}
+          VITE_APP_URL: ${{ vars.VITE_APP_URL }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          jq -n \
+            --arg vite_gatekeeper_url  "$VITE_GATEKEEPER_URL" \
+            --arg better_auth_secret   "$BETTER_AUTH_SECRET" \
+            --arg tmdb_api_token       "$TMDB_API_TOKEN" \
+            --arg vite_app_url         "$VITE_APP_URL" \
+            --arg google_client_id     "$GOOGLE_CLIENT_ID" \
+            --arg google_client_secret "$GOOGLE_CLIENT_SECRET" \
+            '{
+              VITE_GATEKEEPER_URL:  $vite_gatekeeper_url,
+              BETTER_AUTH_SECRET:   $better_auth_secret,
+              TMDB_API_TOKEN:       $tmdb_api_token,
+              VITE_APP_URL:         $vite_app_url,
+              GOOGLE_CLIENT_ID:     $google_client_id,
+              GOOGLE_CLIENT_SECRET: $google_client_secret
+            }' | npx wrangler secret:bulk
 
       - name: Deploy gatekeeper
         working-directory: gatekeeper

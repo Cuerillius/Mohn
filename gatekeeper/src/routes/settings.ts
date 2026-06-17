@@ -5,6 +5,7 @@ import { getDB } from '../lib/db'
 import * as schema from '../db/schema'
 import { eq } from 'drizzle-orm'
 import { getSession } from '../lib/helpers'
+import { encryptApiKey } from '../lib/crypto'
 
 const settings = new Hono<{ Bindings: CloudflareBindings }>()
 
@@ -28,7 +29,7 @@ settings.get('/', async (c) => {
         .values({ userId: session.user.id, torboxKey: '', addonUrls: '[]', inactiveAddonUrls: '[]', onboardingStep: 1, updatedAt: new Date() })
         .returning()
       return c.json({
-        torboxKey: created.torboxKey,
+        torboxKeySet: !!created.torboxKey,
         addonUrls: JSON.parse(created.addonUrls) as string[],
         inactiveAddonUrls: JSON.parse(created.inactiveAddonUrls) as string[],
         onboardingStep: created.onboardingStep,
@@ -36,7 +37,7 @@ settings.get('/', async (c) => {
     }
 
     return c.json({
-      torboxKey: existing.torboxKey,
+      torboxKeySet: !!existing.torboxKey,
       addonUrls: JSON.parse(existing.addonUrls) as string[],
       inactiveAddonUrls: JSON.parse(existing.inactiveAddonUrls) as string[],
       onboardingStep: existing.onboardingStep,
@@ -74,7 +75,7 @@ settings.patch(
       if (existing) {
         console.log('[PATCH /api/settings] updating existing row')
         const set: Record<string, unknown> = { updatedAt: now }
-        if (body.torboxKey !== undefined) set.torboxKey = body.torboxKey
+        if (body.torboxKey !== undefined) set.torboxKey = body.torboxKey ? await encryptApiKey(body.torboxKey, c.env.ENCRYPTION_SECRET) : ''
         if (body.addonUrls !== undefined) set.addonUrls = JSON.stringify(body.addonUrls)
         if (body.inactiveAddonUrls !== undefined) set.inactiveAddonUrls = JSON.stringify(body.inactiveAddonUrls)
         if (body.onboardingStep !== undefined) set.onboardingStep = body.onboardingStep
@@ -83,7 +84,7 @@ settings.patch(
         console.log('[PATCH /api/settings] inserting new row')
         await db.insert(schema.userSettings).values({
           userId: session.user.id,
-          torboxKey: body.torboxKey ?? '',
+          torboxKey: body.torboxKey ? await encryptApiKey(body.torboxKey, c.env.ENCRYPTION_SECRET) : '',
           addonUrls: body.addonUrls ? JSON.stringify(body.addonUrls) : '[]',
           inactiveAddonUrls: body.inactiveAddonUrls ? JSON.stringify(body.inactiveAddonUrls) : '[]',
           onboardingStep: body.onboardingStep ?? 1,

@@ -3,6 +3,7 @@ import { auth } from '../lib/better-auth'
 import { getDB } from '../lib/db'
 import * as schema from '../db/schema'
 import { eq } from 'drizzle-orm'
+import { decryptApiKey } from '../lib/crypto'
 
 const proxies = new Hono<{ Bindings: CloudflareBindings }>()
 
@@ -18,7 +19,7 @@ proxies.all('/torbox/*', async (c) => {
     .where(eq(schema.userSettings.userId, session.user.id))
     .limit(1)
 
-  const apiKey = settings?.torboxKey
+  const apiKey = settings?.torboxKey ? await decryptApiKey(settings.torboxKey, c.env.ENCRYPTION_SECRET) : ''
   if (!apiKey) { console.log('[torbox proxy] no api key for user', session.user.id); return c.json({ error: 'TorBox API key not configured' }, 400) }
 
   const torboxPath = c.req.path.replace('/api/torbox', '')

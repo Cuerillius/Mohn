@@ -6,7 +6,7 @@ import { AddonManager } from "./Addon";
 import { ProfileManager } from "./ProfileManager";
 
 export function StepTorBox({ onNext }: { onNext: () => void }) {
-  const { torboxKey, setTorboxKey } = useSettings();
+  const { torboxKeySet, setTorboxKey } = useSettings();
 
   return (
     <div className="flex flex-col gap-7">
@@ -38,15 +38,25 @@ export function StepTorBox({ onNext }: { onNext: () => void }) {
       </ul>
 
       <TorboxKeySection
-        torboxKey={torboxKey}
+        torboxKeySet={torboxKeySet}
         onSave={setTorboxKey}
         onRemove={() => setTorboxKey("")}
       />
 
       <div className="flex justify-end pt-1">
-        <Button onClick={onNext} disabled={!torboxKey} className="gap-2">
-          Continue <ArrowRight className="size-4" />
-        </Button>
+        <div className="flex items-center gap-3">
+          {!torboxKeySet && (
+            <button
+              onClick={onNext}
+              className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            >
+              Skip for now
+            </button>
+          )}
+          <Button onClick={onNext} disabled={!torboxKeySet} className="gap-2">
+            Continue <ArrowRight className="size-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
