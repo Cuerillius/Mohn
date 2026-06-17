@@ -7,12 +7,13 @@ declare namespace Cloudflare {
 	}
 	interface Env {
 		HYPERDRIVE: Hyperdrive;
-		BETTER_AUTH_URL: string;
+		VITE_GATEKEEPER_URL: string;
 		BETTER_AUTH_SECRET: string;
 		TMDB_API_TOKEN: string;
-		FRONTEND_URL: string;
+		VITE_APP_URL: string;
 		GOOGLE_CLIENT_ID: string;
 		GOOGLE_CLIENT_SECRET: string;
+		ENCRYPTION_SECRET: string;
 	}
 }
 interface CloudflareBindings extends Cloudflare.Env {}
@@ -20,7 +21,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "BETTER_AUTH_URL" | "BETTER_AUTH_SECRET" | "TMDB_API_TOKEN" | "FRONTEND_URL">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "VITE_GATEKEEPER_URL" | "BETTER_AUTH_SECRET" | "TMDB_API_TOKEN" | "VITE_APP_URL">> {}
 }
 
 // Begin runtime types

@@ -1,4 +1,4 @@
-import { parse as parseTorrentTitle } from 'parse-torrent-title';
+import { parseTorrentTitle } from '@viren070/parse-torrent-title';
 import type { AddonStream, AddonStreamResponse, EnrichedStream, Resolution } from '../types/torbox';
 
 async function fetchAddonStreams(baseUrl: string, type: string, streamId: string): Promise<AddonStream[]> {

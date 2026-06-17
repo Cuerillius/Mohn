@@ -37,11 +37,11 @@ export function TorboxInfo() {
 }
 
 export function TorboxKeySection({
-  torboxKey,
+  torboxKeySet,
   onSave,
   onRemove,
 }: {
-  torboxKey: string;
+  torboxKeySet: boolean;
   onSave: (key: string) => void;
   onRemove: () => void;
 }) {
@@ -49,12 +49,12 @@ export function TorboxKeySection({
   const [keyDraft, setKeyDraft] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
-  const [verified, setVerified] = useState(!!torboxKey);
+  const [verified, setVerified] = useState(torboxKeySet);
 
   const { data: plan = null, isLoading: fetchingPlan } = useQuery({
     queryKey: keys.torboxPlan(),
     queryFn: fetchTorboxPlan,
-    enabled: !!torboxKey && verified,
+    enabled: torboxKeySet && verified,
     retry: false,
   });
 

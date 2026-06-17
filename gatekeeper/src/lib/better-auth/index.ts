@@ -6,11 +6,11 @@ import { getDB } from "../db";
 export const auth = (env: CloudflareBindings) => {
   return betterAuth({
     database: drizzleAdapter(getDB(env), { provider: "pg", schema }),
-    baseURL: env.BETTER_AUTH_URL,
+    baseURL: env.VITE_GATEKEEPER_URL,
     appName: "Mohn Gatekeeper",
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [
-      ...(env.FRONTEND_URL ? env.FRONTEND_URL.split(",") : []),
+      ...(env.VITE_APP_URL ? env.VITE_APP_URL.split(",") : []),
       // Required for Social sign-in flows to work in the Tauri WebView
       "https://tauri.localhost",
       "tauri://localhost",

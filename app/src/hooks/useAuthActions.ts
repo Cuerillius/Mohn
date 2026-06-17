@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { authClient, signIn, signUp, getSession } from "../lib/authClient";
 import { useAuth } from "../context/AuthContext";
-import { apiPost } from "../services/api";
+import { useProfile } from "../context/ProfileContext";
+import { apiPost, apiDelete } from "../services/api";
 import { keys } from "../lib/queryKeys";
 import { isTauri } from "@/lib/platform";
 
@@ -11,11 +12,13 @@ export type Mode = "signin" | "signup";
 
 export function useAuthActions() {
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { setUser, logout } = useAuth();
+  const { setProfile } = useProfile();
   const queryClient = useQueryClient();
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
 
   interface AuthUser {
@@ -136,11 +139,26 @@ export function useAuthActions() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await apiDelete("/api/account");
+      await authClient.signOut();
+      logout();
+      setProfile(null);
+      navigate("/login");
+    } catch {
+      setIsDeleting(false);
+    }
+  };
+
   return {
     handleEmailSubmit,
     handleGoogleSignIn,
+    handleDeleteAccount,
     loading,
     googleLoading,
+    isDeleting,
     error,
     setError,
   };
