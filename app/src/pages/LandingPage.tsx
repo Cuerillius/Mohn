@@ -8,7 +8,6 @@ import {
   Globe,
   Monitor,
   Check,
-  Play,
   Pause,
   RotateCcw,
   RotateCw,

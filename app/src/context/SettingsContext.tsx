@@ -5,14 +5,14 @@ import { useAuth } from "./AuthContext";
 import { keys } from "../lib/queryKeys";
 
 interface Settings {
-  torboxKey: string;
+  torboxKeySet: boolean;
   addonUrls: string[];
   inactiveAddonUrls: string[];
   onboardingStep: number;
 }
 
 interface SettingsContextValue {
-  torboxKey: string;
+  torboxKeySet: boolean;
   setTorboxKey: (key: string) => void;
   addonUrls: string[];
   addAddonUrl: (url: string) => void;
@@ -28,7 +28,7 @@ interface SettingsContextValue {
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
-const EMPTY: Settings = { torboxKey: "", addonUrls: [], inactiveAddonUrls: [], onboardingStep: 1 };
+const EMPTY: Settings = { torboxKeySet: false, addonUrls: [], inactiveAddonUrls: [], onboardingStep: 1 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -37,8 +37,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const { data = EMPTY, isLoading } = useQuery({
     queryKey: keys.settings(),
     queryFn: () =>
-      apiGet<Settings>("/api/settings").then((s) => ({
-        torboxKey: s.torboxKey ?? "",
+      apiGet<{ torboxKeySet: boolean; addonUrls: string[]; inactiveAddonUrls: string[]; onboardingStep: number }>("/api/settings").then((s) => ({
+        torboxKeySet: !!s.torboxKeySet,
         addonUrls: s.addonUrls ?? [],
         inactiveAddonUrls: s.inactiveAddonUrls ?? [],
         onboardingStep: s.onboardingStep ?? 1,
@@ -47,15 +47,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     staleTime: Infinity,
   });
 
-  function applyPatch(update: Partial<Settings>) {
-    const current =
-      queryClient.getQueryData<Settings>(keys.settings()) ?? EMPTY;
+  function applyPatch(update: Partial<Omit<Settings, 'torboxKeySet'>>) {
+    const current = queryClient.getQueryData<Settings>(keys.settings()) ?? EMPTY;
     const next = { ...current, ...update };
     queryClient.setQueryData(keys.settings(), next);
     apiPatch("/api/settings", update).catch(() => {});
   }
 
-  const setTorboxKey = (key: string) => applyPatch({ torboxKey: key });
+  const setTorboxKey = (key: string) => {
+    const current = queryClient.getQueryData<Settings>(keys.settings()) ?? EMPTY;
+    queryClient.setQueryData(keys.settings(), { ...current, torboxKeySet: !!key });
+    apiPatch("/api/settings", { torboxKey: key }).catch(() => {});
+  };
 
   const setOnboardingStep = (step: number) => applyPatch({ onboardingStep: step });
 
@@ -84,7 +87,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   return (
     <SettingsContext.Provider
       value={{
-        torboxKey: data.torboxKey,
+        torboxKeySet: data.torboxKeySet,
         setTorboxKey,
         addonUrls: data.addonUrls,
         addAddonUrl,

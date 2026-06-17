@@ -6,9 +6,9 @@ import * as schema from "./src/db/schema";
 
 const {
   HYPERDRIVE_CONNECTION_STRING,
-  BETTER_AUTH_URL,
+  VITE_GATEKEEPER_URL,
   BETTER_AUTH_SECRET,
-  FRONTEND_URL,
+  VITE_APP_URL,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
 } = process.env;
@@ -25,9 +25,9 @@ const db = drizzle(queryClient);
 export const auth = betterAuth({
   appName: "Mohn Gatekeeper",
   database: drizzleAdapter(db, { provider: "pg", schema }),
-  baseURL: BETTER_AUTH_URL,
+  baseURL: VITE_GATEKEEPER_URL,
   secret: BETTER_AUTH_SECRET,
-  trustedOrigins: [...(FRONTEND_URL?.split(",") ?? [])],
+  trustedOrigins: [...(VITE_APP_URL?.split(",") ?? [])],
   emailAndPassword: {
     enabled: true,
   },
