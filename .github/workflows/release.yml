@@ -84,13 +84,20 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-landing-${{ hashFiles('landing/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-landing-
+
       - name: Install and build
         working-directory: landing
+        timeout-minutes: 5
         env:
           VITE_APP_URL: ${{ vars.VITE_APP_URL }}
           VITE_LANDING_URL: ${{ vars.VITE_LANDING_URL }}
         run: |
-          bun install
+          bun install --frozen-lockfile
           bun run build
 
       - name: Deploy to Cloudflare Pages
@@ -147,7 +154,7 @@ jobs:
               VITE_APP_URL:         $vite_app_url,
               GOOGLE_CLIENT_ID:     $google_client_id,
               GOOGLE_CLIENT_SECRET: $google_client_secret
-            }' | npx wrangler secret:bulk
+            }' | npx wrangler secret bulk
 
       - name: Deploy gatekeeper
         working-directory: gatekeeper
