@@ -136,6 +136,20 @@ export default function LoginPage() {
               {mode === "signin" ? "Sign up" : "Sign in"}
             </button>
           </p>
+
+          {mode === "signup" && (
+            <p className="mt-4 text-center text-xs text-muted-foreground/70 leading-relaxed">
+              By creating an account you agree to the{" "}
+              <a href="/terms" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="/privacy" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">
+                Privacy Policy
+              </a>
+              .
+            </p>
+          )}
         </div>
       </div>
     </div>
