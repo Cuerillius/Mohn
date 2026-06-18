@@ -1,8 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mohn-landing",
-  "assets": { "directory": "./dist" },
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
   "compatibility_date": "2026-06-17",
   // Build-time VITE_* vars are injected as env vars during CI build
-  "vars": {}
+  "vars": {},
 }

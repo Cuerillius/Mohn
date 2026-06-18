@@ -1,138 +1,78 @@
 <p align="center">
-  <img src="app/src-tauri/icons/icon.png" alt="Mohn" width="120" />
+  <img src="app/src-tauri/icons/icon.png" alt="Mohn" width="180" />
 </p>
-
+ 
 <h1 align="center">Mohn</h1>
-
-A desktop app / website for browsing and watching movies & TV shows.
-
-Built on top of the [TMDB](https://www.themoviedb.org/) and Stremio-compatible add-ons for stream discovery. Debrid playback via [TorBox](https://torbox.app/) for fast, reliable streaming. Plays back through an embedded MPV player, your browser or external player.
-
+ 
+<p align="center">
+  <strong>The streaming app Stremio should've been.</strong>
+  <br />
+A modern, open-source streaming client built for debrid streaming. Browse, discover, and watch instantly.
+</p>
+ 
 ---
-
+ 
+<img src="app/public/hero.png" alt="Homepage" />
+ 
+ 
 ## Features
-
-- **Browse & search** — trending, top-rated, by genre, or just search for anything
-- **Smart Recomendations** - based on your watch history and watchlists
-- **Multi-profile** — separate watch history and watchlists per profile
-- **Debrid streaming** — plug in a TorBox API key and stream cached torrents instantly
-- **Stremio add-ons** — compatible with any Stremio torrent add-on
-- **Flexible playback** — embedded MPV, browser player or hand off to VLC
-- **Syncronisation** — everything is synced so switching from one device to another is frictionless
-
----
-
-## Architecture
-
+ 
+- **Multiple profiles** —  Individual history, watchlists, and recommendations for everyone.
+- **TorBox integration** — Stream from your Debrid cloud at full speed.
+- **Stremio add-on support** — Supports any public or self-hosted add-on.
+- **Synced everywhere** — History and settings stay updated across all devices.
+- **Tailored for you** — A smart homepage with recommendations that improve over time.
+ 
+## Getting Started
+ 
+1. **Create an account** — sign up with email or Google
+2. **Add your sources** — paste in a TorBox API key and connect any Stremio-compatible add-ons
+3. **Watch** — browse trending titles, search for anything, and hit play
+ 
+ 
+ 
+## Repo Structure
+ 
 ```
-app/               — Tauri 2 desktop app (React + Vite + Tailwind)
-gatekeeper/        — Backend API (Cloudflare Workers + Hono + PostgreSQL)
+/app           # Desktop and web app
+/landing       # Marketing landing page
+/gatekeeper    # Backend
 ```
-
-The backend acts as an authenticated proxy for TMDB, so API keys never touch the client. Auth sessions are stored in PostgreSQL via Cloudflare Hyperdrive.
-
----
-
-## Setup
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) 20+
-- [Bun](https://bun.sh/) (for the backend)
-- [Rust](https://www.rust-lang.org/tools/install) + [Tauri CLI](https://tauri.app/start/prerequisites/)
-- A [Cloudflare](https://cloudflare.com/) account with Workers enabled
-- A PostgreSQL database (e.g. [Neon](https://neon.tech/))
-- A [TMDB API token](https://developer.themoviedb.org/docs/getting-started) (bearer token, not the v3 key)
-- Optionally: Google OAuth credentials, a [TorBox](https://torbox.app/) account
-
----
-
-### 1. Backend — `jlk-gatekeeper`
-
+## Dev Setup
+ 
+**Prerequisites:** [Bun](https://bun.sh), [Docker](https://www.docker.com) (for Postgres), [Rust](https://rustup.rs) + [Tauri CLI](https://tauri.app) (desktop app only)
+ 
+### 1. Gatekeeper (backend)
+ 
 ```bash
-cd jlk-gatekeeper
+cd gatekeeper
+cp .dev.vars.example .dev.vars   # fill in secrets
+docker compose up -d             # start Postgres
 bun install
+bun run db:migrate               # run migrations
+bun run dev                      # starts at http://localhost:8787
 ```
-
-Create a `.dev.vars` file (used by Wrangler locally):
-
-```env
-BETTER_AUTH_URL=http://localhost:8787
-BETTER_AUTH_SECRET=your-random-secret-here
-FRONTEND_URL=http://localhost:1420
-TMDB_API_TOKEN=your-tmdb-bearer-token
-HYPERDRIVE_CONNECTION_STRING=postgresql://user:pass@host/db
-
-# Optional — for Google OAuth
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-```
-
-Push the database schema and start the dev server:
-
+ 
+### 2. App (web / desktop)
+ 
 ```bash
-bun db:push
-bun dev
+cd app
+bun install
+bun run dev          # web app at http://localhost:5173
+bun run tauri dev    # desktop app (requires Rust + Tauri CLI)
 ```
-
-The backend will be running at `http://localhost:8787`.
-
----
-
-### 2. Frontend — `jlkr`
-
+ 
+The app expects the gatekeeper running at `http://localhost:8787` by default.
+ 
+### 3. Landing page
+ 
 ```bash
-cd jlkr
-npm install
+cd landing
+cp .env.example .env   # fill in env
+bun install
+bun run dev            # starts at http://localhost:5174
 ```
-
-Create a `.env` file:
-
-```env
-VITE_GATEKEEPER_URL=http://localhost:8787
-```
-
-**Run in the browser (no Tauri):**
-
-```bash
-npm run dev
-```
-
-**Run as a desktop app (Tauri):**
-
-```bash
-npm run tauri dev
-```
-
----
-
-### Deploying the backend to Cloudflare
-
-```bash
-cd jlk-gatekeeper
-
-# Set production secrets
-wrangler secret put BETTER_AUTH_SECRET
-wrangler secret put TMDB_API_TOKEN
-# ... etc.
-
-bun deploy
-```
-
-After deploying, update `VITE_GATEKEEPER_URL` in your frontend `.env` to the Workers URL and rebuild.
-
----
-
-## Tech Stack
-
-| Layer         | Stack                                     |
-| ------------- | ----------------------------------------- |
-| Desktop       | Tauri 2, Rust                             |
-| Frontend      | React 18, Vite, Tailwind CSS 4, shadcn/ui |
-| Data fetching | TanStack Query 5, React Router 7          |
-| Backend       | Cloudflare Workers, Hono, Drizzle ORM     |
-| Database      | PostgreSQL (via Cloudflare Hyperdrive)    |
-| Auth          | better-auth                               |
-| Video         | libmpv (desktop), HLS.js (browser)        |
-| Metadata      | TMDB API                                  |
-| Streaming     | Stremio add-ons + TorBox debrid           |
+ 
+## License
+ 
+Open source. See [LICENSE](LICENSE) for details.

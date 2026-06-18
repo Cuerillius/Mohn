@@ -322,7 +322,7 @@ export default function LandingPage() {
             />
 
             {/* Mockup frame */}
-            <div className="relative mx-auto max-w-5xl rounded-2xl border bg-card/70 p-2 shadow-2xl shadow-black/60 backdrop-blur">
+            <div className="relative mx-auto max-w-5xl rounded-2xl border bg-card/70 p-1 shadow-2xl shadow-black/60 backdrop-blur">
               <img
                 src="/hero.png"
                 alt="Mohn app screenshot"
@@ -337,7 +337,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ──────────────────────────────────────────────── */}
-      <section id="features" className="mx-auto max-w-6xl px-6 py-24">
+      <section id="features" className="mx-auto mt-24  max-w-6xl px-6 py-24">
         <div className="text-center">
           <h2 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">
             What Mohn has to offer
@@ -517,13 +517,6 @@ export default function LandingPage() {
                 ),
                 dl: true,
                 disabled: false,
-              },
-              {
-                label: "Linux (coming soon)",
-                href: null,
-                icon: <Monitor className="size-5 text-muted-foreground/40" />,
-                dl: false,
-                disabled: true,
               },
               {
                 label: "Web",
