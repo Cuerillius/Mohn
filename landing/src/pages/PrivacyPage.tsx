@@ -115,7 +115,8 @@ export default function PrivacyPage() {
             Your account data is retained for as long as your account is active.
             You can delete individual profiles at any time, which removes their
             associated watch history and watchlist. To delete your entire
-            account and all associated data, contact us at the address below.
+            account and all associated data, you can do so directly from your
+            account settings.
           </p>
 
           <h2 className="text-lg font-medium text-white">5. Security</h2>
