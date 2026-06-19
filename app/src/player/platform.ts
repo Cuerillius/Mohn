@@ -1,11 +1,6 @@
-// Single source of truth for platform detection. Everything in the player
-// module asks here — no ad-hoc `"__TAURI__" in window` checks elsewhere.
+import { isTauri } from "@/lib/platform";
 
 export type Platform = "tauri" | "web" | "mobileweb";
-
-function detectTauri(): boolean {
-  return "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
-}
 
 function detectMobileBrowser(): boolean {
   const ua = navigator.userAgent;
@@ -20,7 +15,7 @@ let cached: Platform | null = null;
 
 export function getPlatform(): Platform {
   if (cached) return cached;
-  cached = detectTauri()
+  cached = isTauri
     ? "tauri"
     : detectMobileBrowser()
       ? "mobileweb"

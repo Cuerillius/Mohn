@@ -4,8 +4,9 @@ import * as schema from "../../db/schema";
 import { getDB } from "../db";
 
 export const auth = (env: CloudflareBindings) => {
+  const db = getDB(env);
   return betterAuth({
-    database: drizzleAdapter(getDB(env), { provider: "pg", schema }),
+    database: drizzleAdapter(db, { provider: "pg", schema }),
     baseURL: env.VITE_GATEKEEPER_URL,
     appName: "Mohn Gatekeeper",
     secret: env.BETTER_AUTH_SECRET,
@@ -25,6 +26,21 @@ export const auth = (env: CloudflareBindings) => {
         clientId: env.GOOGLE_CLIENT_ID,
         clientSecret: env.GOOGLE_CLIENT_SECRET,
         prompt: "select_account",
+      },
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          after: async (user) => {
+            await db.insert(schema.profile).values({
+              id: crypto.randomUUID(),
+              name: user.name,
+              userId: user.id,
+              sortOrder: 0,
+              createdAt: new Date(),
+            });
+          },
+        },
       },
     },
     advanced: {

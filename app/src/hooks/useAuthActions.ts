@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { authClient, signIn, signUp, getSession } from "../lib/authClient";
 import { useAuth } from "../context/AuthContext";
 import { useProfile } from "../context/ProfileContext";
-import { apiPost, apiDelete } from "../services/api";
+import { apiDelete } from "../services/api";
 import { keys } from "../lib/queryKeys";
 import { isTauri } from "@/lib/platform";
 
@@ -58,7 +58,6 @@ export function useAuthActions() {
         if (err || !res?.user)
           throw new Error(err?.message ?? "Sign up failed");
         setUser(res.user);
-        await apiPost("/api/profiles", { name: res.user.name }).catch(() => {});
       }
       navigate("/profile");
     } catch (e: any) {
