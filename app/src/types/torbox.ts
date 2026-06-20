@@ -17,7 +17,17 @@ export interface AddonStreamResponse {
   streams: AddonStream[];
 }
 
-export type Resolution = '4K' | '1440p' | '1080p' | '720p' | '480p' | '360p' | '240p' | 'Unknown';
+export type TorBoxPlan = 0 | 1 | 2 | 3; // 0=free, 1=essential, 2=pro, 3=standard
+
+export type Resolution =
+  | "4K"
+  | "1440p"
+  | "1080p"
+  | "720p"
+  | "480p"
+  | "360p"
+  | "240p"
+  | "Unknown";
 
 export interface EnrichedStream extends AddonStream {
   parsedTitle: string;
@@ -100,4 +110,3 @@ export interface TorBoxUserResponse {
     plan: number; // 0=free, 1=essential, 2=pro, 3=standard
   };
 }
-

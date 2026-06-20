@@ -67,11 +67,11 @@ function FeatureCard({
         className,
       )}
     >
-      <div className="mb-4 inline-flex size-9 items-center justify-center rounded-lg border bg-muted text-foreground/60 transition-colors group-hover:text-foreground">
-        <Icon className="size-4" />
+      <div className="mb-4 inline-flex size-10 items-center justify-center rounded-lg border bg-muted text-foreground/60 transition-colors group-hover:text-foreground">
+        <Icon className="size-5" />
       </div>
-      <p className="font-semibold">{title}</p>
-      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+      <p className="font-semibold text-lg">{title}</p>
+      <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
         {desc}
       </p>
     </div>
@@ -227,34 +227,38 @@ export default function LandingPage() {
         >
           {/* Logo */}
           <a href="#top" className="ml-1 flex shrink-0 items-center gap-2">
-            <img src="/mohn.svg" alt="Mohn" className="size-7" />
-            <span className="font-bold">Mohn</span>
+            <img src="/mohn.svg" alt="Mohn" className="size-8" />
+            <span className="font-bold text-lg">Mohn</span>
           </a>
 
           {/* Actions */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
-              size="default"
-              className="hidden rounded-full text-muted-foreground hover:text-foreground sm:inline-flex"
+              size="lg"
+              className="hidden rounded-full h-11 px-6 text-base text-muted-foreground hover:text-foreground sm:inline-flex"
               asChild
             >
               <a href="#download">
-                <Download className="size-3.5" />
+                <Download className="mr-2 size-4" />
                 Download
               </a>
             </Button>
-            <Button size="default" className="rounded-full" onClick={openApp}>
+            <Button
+              size="lg"
+              className="rounded-full h-11 px-6 text-base"
+              onClick={openApp}
+            >
               Launch web app
-              <ArrowRight className="size-3.5" />
+              <ArrowRight className="ml-2 size-4" />
             </Button>
             <a
               href={GITHUB}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden items-center gap-1.5 rounded-full ml-3 my-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
+              className="hidden items-center gap-1.5 rounded-full ml-2 my-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
             >
-              <GithubIcon className="size-7" />
+              <GithubIcon className="size-8" />
             </a>
           </div>
         </nav>
@@ -271,17 +275,17 @@ export default function LandingPage() {
             href={GITHUB}
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center gap-2 rounded-full border bg-card/60 px-3 py-1 text-sm backdrop-blur transition-colors hover:bg-muted"
+            className="group inline-flex items-center gap-2 rounded-full border bg-card/60 px-4 py-1.5 text-sm font-medium backdrop-blur transition-colors hover:bg-muted"
           >
             <span className="text-muted-foreground">Open source</span>
             <span className="flex items-center gap-1 text-foreground">
               Star on GitHub
-              <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
             </span>
           </a>
 
           {/* Title */}
-          <h1 className="relative z-10 max-w-4xl bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-balance text-5xl font-bold leading-[1.05] tracking-tight text-transparent drop-shadow-2xl sm:text-7xl sm:leading-[1.05]">
+          <h1 className="relative z-10 max-w-4xl bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-balance text-5xl font-bold leading-[1.05] tracking-tight text-transparent drop-shadow-2xl sm:text-7xl sm:leading-[1.05]">
             The streaming app Stremio should've been
           </h1>
 
@@ -292,19 +296,23 @@ export default function LandingPage() {
           </p>
 
           {/* Buttons */}
-          <div className="relative z-10 flex flex-wrap justify-center gap-3">
-            <Button size="lg" className="rounded-full px-6" onClick={openApp}>
+          <div className="relative z-10 flex flex-wrap justify-center gap-4">
+            <Button
+              size="lg"
+              className="rounded-full h-14 px-8 text-lg shadow-lg"
+              onClick={openApp}
+            >
               Launch web app
-              <ArrowRight className="size-4" />
+              <ArrowRight className="ml-2 size-5" />
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="rounded-full px-6"
+              className="rounded-full h-14 px-8 text-lg"
               asChild
             >
               <a href="#download">
-                <Download className="size-4" />
+                <Download className="mr-2 size-5" />
                 Download
               </a>
             </Button>
@@ -337,33 +345,33 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ──────────────────────────────────────────────── */}
-      <section id="features" className="mx-auto mt-24  max-w-6xl px-6 py-24">
+      <section id="features" className="mx-auto mt-24 max-w-6xl px-6 py-24">
         <div className="text-center">
           <h2 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">
             What Mohn has to offer
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-md text-lg text-muted-foreground">
             Everything you'd want in a streaming client, nothing you don't.
           </p>
         </div>
 
         {/* ── Profiles spotlight ── */}
-        <div className="mt-6 grid grid-cols-1 items-center gap-6 rounded-3xl border bg-card p-8 lg:grid-cols-2 lg:gap-12">
+        <div className="mt-8 grid grid-cols-1 items-center gap-6 rounded-3xl border bg-card p-8 lg:grid-cols-2 lg:gap-12 lg:p-12">
           <div className="order-2 lg:order-1">
             <ProfileMock />
           </div>
           <div className="order-1 lg:order-2">
             <div className="flex items-center gap-3">
-              <h3 className="text-2xl font-bold tracking-tight">
+              <h3 className="text-3xl font-bold tracking-tight">
                 Multiple profiles, one account
               </h3>
             </div>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-4 text-lg text-muted-foreground">
               Everyone in the house gets their own profile, with separate watch
               history, continue-watching list and recommendations. Switch
               profiles in one click, no passwords needed.
             </p>
-            <ul className="mt-5 space-y-2.5">
+            <ul className="mt-6 space-y-3">
               {[
                 "Independent history and watchlists",
                 "Switch profiles in one click, no password needed",
@@ -371,10 +379,10 @@ export default function LandingPage() {
               ].map((t) => (
                 <li
                   key={t}
-                  className="flex items-center gap-3 text-sm text-muted-foreground"
+                  className="flex items-center gap-3 text-base text-muted-foreground"
                 >
-                  <div className="flex size-4 shrink-0 items-center justify-center rounded-full border bg-muted">
-                    <Check className="size-2.5 text-foreground" />
+                  <div className="flex size-5 shrink-0 items-center justify-center rounded-full border bg-muted">
+                    <Check className="size-3 text-foreground" />
                   </div>
                   {t}
                 </li>
@@ -384,7 +392,7 @@ export default function LandingPage() {
         </div>
 
         {/* ── TorBox + web player spotlight ── */}
-        <div className="relative mt-6 grid grid-cols-1 items-center gap-6 overflow-hidden rounded-3xl border bg-card p-8 lg:grid-cols-2 lg:gap-12">
+        <div className="relative mt-8 grid grid-cols-1 items-center gap-6 overflow-hidden rounded-3xl border bg-card p-8 lg:grid-cols-2 lg:gap-12 lg:p-12">
           {/* Green glow */}
           <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-500/10 blur-[80px]" />
           <div className="pointer-events-none absolute left-0 top-0 h-48 w-48 rounded-full bg-emerald-400/5 blur-[40px]" />
@@ -396,25 +404,25 @@ export default function LandingPage() {
                 alt="TorBox"
                 className="size-8 rounded-lg object-contain"
               />
-              <span className="text-sm font-medium text-emerald-400">
+              <span className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">
                 Powered by TorBox
               </span>
             </div>
-            <h3 className="text-2xl font-bold tracking-tight">
+            <h3 className="text-3xl font-bold tracking-tight">
               Cached streams. Zero wait.
             </h3>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-4 text-lg text-muted-foreground">
               Link your TorBox account to stream from your personal Debrid cloud
               cache at full speed, directly in the browser or via the desktop
               app.
             </p>
-            <p className="mt-4 text-sm text-muted-foreground/60">
+            <p className="mt-5 text-base text-muted-foreground/60">
               Bring your own{" "}
               <a
                 href="https://torbox.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-400/50 hover:underline"
+                className="text-emerald-400/70 font-medium hover:underline hover:text-emerald-400"
               >
                 TorBox Api Key
               </a>{" "}
@@ -426,7 +434,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="mt-7 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
           <FeatureCard
             icon={Sparkles}
             title="Tailored for you"
@@ -451,12 +459,12 @@ export default function LandingPage() {
           <h2 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">
             Up and running in minutes
           </h2>
-          <p className="mx-auto mt-4 max-w-sm text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-sm text-lg text-muted-foreground">
             No configuration rabbit holes. Three steps and you're watching.
           </p>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border rounded-2xl border bg-card overflow-hidden">
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border rounded-3xl border bg-card overflow-hidden">
           {[
             {
               n: "01",
@@ -474,46 +482,50 @@ export default function LandingPage() {
               desc: "Browse trending titles, search for anything, and hit play. Stream in the browser or fire up the desktop app.",
             },
           ].map((s) => (
-            <div key={s.n} className="p-8 flex flex-col">
-              <div className="text-8xl font-black tracking-tighter leading-none select-none text-white/[0.08]">
+            <div key={s.n} className="p-8 lg:p-10 flex flex-col">
+              <div className="text-[6rem] font-black tracking-tighter leading-none select-none text-white/[0.04]">
                 {s.n}
               </div>
-              <h3 className="mt-4 font-semibold">{s.title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+              <h3 className="mt-6 text-xl font-bold">{s.title}</h3>
+              <p className="mt-2 text-base leading-relaxed text-muted-foreground">
                 {s.desc}
               </p>
             </div>
           ))}
         </div>
 
-        <div className="mt-8 flex justify-center">
-          <Button size="lg" className="rounded-full px-6" onClick={openApp}>
+        <div className="mt-12 flex justify-center">
+          <Button
+            size="lg"
+            className="rounded-full h-14 px-8 text-lg shadow-lg"
+            onClick={openApp}
+          >
             Get started now
-            <ArrowRight className="size-4" />
+            <ArrowRight className="ml-2 size-5" />
           </Button>
         </div>
       </section>
 
       {/* ── Download + CTA ──────────────────────────────────────────── */}
       <section id="download" className="mx-auto max-w-6xl px-6 pb-28 py-24">
-        <div className="rounded-3xl border bg-card px-8 py-16 text-center">
-          <img src="/mohn.svg" alt="Mohn" className="mx-auto size-12" />
-          <h2 className="mt-5 text-balance text-4xl font-bold tracking-tight sm:text-5xl">
+        <div className="rounded-3xl border bg-card px-8 py-20 text-center">
+          <img src="/mohn.svg" alt="Mohn" className="mx-auto size-14" />
+          <h2 className="mt-6 text-balance text-4xl font-bold tracking-tight sm:text-5xl">
             Ready to start watching?
           </h2>
-          <p className="mx-auto mt-4 max-w-sm text-muted-foreground">
+          <p className="mx-auto mt-5 max-w-md text-lg text-muted-foreground">
             Download the desktop app or jump straight into the browser. Same
             account, same everything.
           </p>
 
           {/* Download buttons */}
-          <div className="mx-auto mt-10 flex flex-wrap justify-center gap-3">
+          <div className="mx-auto mt-12 flex flex-wrap justify-center gap-4">
             {[
               {
                 label: "Windows",
                 href: RELEASES,
                 icon: (
-                  <Monitor className="size-5 text-muted-foreground transition-colors group-hover:text-foreground" />
+                  <Monitor className="size-6 text-muted-foreground transition-colors group-hover:text-foreground" />
                 ),
                 dl: true,
                 disabled: false,
@@ -522,7 +534,7 @@ export default function LandingPage() {
                 label: "Web",
                 href: null,
                 icon: (
-                  <Globe className="size-5 text-muted-foreground transition-colors group-hover:text-foreground" />
+                  <Globe className="size-6 text-muted-foreground transition-colors group-hover:text-foreground" />
                 ),
                 dl: false,
                 disabled: false,
@@ -534,43 +546,43 @@ export default function LandingPage() {
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-3 rounded-2xl border bg-muted/20 px-5 py-4 font-medium transition-colors hover:border-foreground/20 hover:bg-muted/40"
+                  className="group flex items-center gap-4 rounded-2xl border bg-muted/20 px-6 py-5 sm:px-8 sm:py-6 font-semibold transition-colors hover:border-foreground/30 hover:bg-muted/40"
                 >
                   {icon}
-                  <span className="text-sm">{label}</span>
+                  <span className="text-lg">{label}</span>
                   {dl && (
-                    <Download className="ml-auto size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
+                    <Download className="ml-4 size-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                   )}
                 </a>
               ) : disabled ? (
                 <div
                   key={label}
-                  className="flex items-center gap-3 rounded-2xl border border-dashed bg-muted/10 px-5 py-4 font-medium opacity-50 cursor-not-allowed"
+                  className="flex items-center gap-4 rounded-2xl border border-dashed bg-muted/10 px-6 py-5 sm:px-8 sm:py-6 font-semibold opacity-50 cursor-not-allowed"
                 >
                   {icon}
-                  <span className="text-sm">{label}</span>
+                  <span className="text-lg">{label}</span>
                 </div>
               ) : (
                 <button
                   key={label}
                   onClick={openApp}
-                  className="group flex items-center gap-3 rounded-2xl border bg-muted/20 px-5 py-4 font-medium transition-colors hover:border-foreground/20 hover:bg-muted/40"
+                  className="group flex items-center gap-4 rounded-2xl border bg-muted/20 px-6 py-5 sm:px-8 sm:py-6 font-semibold transition-colors hover:border-foreground/30 hover:bg-muted/40"
                 >
                   {icon}
-                  <span className="text-sm">{label}</span>
-                  <ArrowRight className="ml-auto size-4 text-muted-foreground transition-colors group-hover:text-foreground" />
+                  <span className="text-lg">{label}</span>
+                  <ArrowRight className="ml-4 size-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </button>
               ),
             )}
           </div>
 
-          <p className="mt-5 text-xs text-muted-foreground/50">
+          <p className="mt-8 text-sm text-muted-foreground/60">
             all releases on{" "}
             <a
               href={RELEASES}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-2 transition-colors hover:text-muted-foreground"
+              className="underline underline-offset-4 transition-colors hover:text-muted-foreground"
             >
               GitHub
             </a>
@@ -582,11 +594,13 @@ export default function LandingPage() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground sm:flex-row">
           <div className="flex items-center gap-2">
-            <img src="/mohn.svg" alt="Mohn" className="size-5" />
-            <span className="font-semibold text-foreground">Mohn</span>
+            <img src="/mohn.svg" alt="Mohn" className="size-6" />
+            <span className="font-semibold text-base text-foreground">
+              Mohn
+            </span>
           </div>
-          <p className="text-xs">© {new Date().getFullYear()} Mohn</p>
-          <div className="flex items-center gap-5 text-xs">
+          <p className="text-sm">© {new Date().getFullYear()} Mohn</p>
+          <div className="flex items-center gap-6 text-sm">
             <a
               href="/privacy"
               className="hover:text-foreground transition-colors"
@@ -603,9 +617,9 @@ export default function LandingPage() {
               href={GITHUB}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
             >
-              <GithubIcon className="size-3.5" /> GitHub
+              <GithubIcon className="size-4" /> GitHub
             </a>
           </div>
         </div>

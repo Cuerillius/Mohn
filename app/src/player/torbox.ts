@@ -323,6 +323,28 @@ export const RESOLUTION_INDEX: Record<string, number | null> = {
   "144p": 0,
 };
 
+// ── TESTING: hardcoded createStream result (set to null to disable). ──────────
+const HARDCODED_STREAM: StreamResult | null = {
+  hlsUrl:
+    "https://flux-003.wnam.tb-cdn.io/stream/4f803897-181b-4056-98b9-5d074a593aeb/null/null/0/playlist.m3u8?token=bae9bc32-38e6-458d-bf03-601a3743a30c&scrobbling_enabled=True",
+  presignedToken: "4f803897-181b-4056-98b9-5d074a593aeb",
+  userToken: "bae9bc32-38e6-458d-bf03-601a3743a30c",
+  mimetype: "video/mp4",
+  needsTranscoding: true,
+  isTranscoding: false,
+  audios: [
+    {
+      index: 1,
+      codec: "aac",
+      default: true,
+      language: "eng",
+      language_full: "English",
+      title: undefined,
+    },
+  ],
+  subtitles: [],
+};
+
 /**
  * Create (or re-create with new selections) a web HLS stream for a torrent file.
  * Re-call with different indexes to switch audio/subtitle/resolution.
@@ -332,6 +354,10 @@ export async function createStream(
   fileId: number,
   sel: StreamSelection = {},
 ): Promise<StreamResult> {
+  // ── TESTING: hardcoded response to avoid hammering the TorBox API. ──────────
+  // Remove this block to restore the real /stream/createstream call.
+  if (HARDCODED_STREAM) return HARDCODED_STREAM;
+
   const params = new URLSearchParams({
     id: String(torrentId),
     file_id: String(fileId),

@@ -1,74 +1,49 @@
 import { Check, Loader } from "lucide-react";
-import { cn } from "@/lib/utils";
 
-interface Step {
-  title: string;
-  description: string;
-}
+export type LoadStep = "lookup" | "search" | "cache" | "prepare" | "start";
 
-export default function MultiStepLoader({
-  currentStep,
-  steps,
-}: {
-  currentStep: number;
-  steps: Step[];
-}) {
+const LOAD_STEPS: { key: LoadStep; label: string }[] = [
+  { key: "lookup", label: "Looking up title" },
+  { key: "search", label: "Searching addons for sources" },
+  { key: "cache", label: "Checking cached availability" },
+  { key: "prepare", label: "Preparing the stream" },
+  { key: "start", label: "Starting playback" },
+];
+
+export default function LoadingSteps({ current }: { current: LoadStep }) {
+  const idx = LOAD_STEPS.findIndex((s) => s.key === current);
   return (
-    <div className="w-full max-w-md">
-      {steps.map((step, index) => {
-        const isCompleted = currentStep > index;
-        const isActive = currentStep === index;
-
-        return (
-          <div key={index} className="relative pb-8 pl-12 last:pb-0">
-            {index !== steps.length - 1 && (
-              <div
-                className={cn(
-                  "absolute left-3.75 top-8 bottom-0 w-0.5 -translate-x-1/2 rounded-full transition-colors duration-300",
-                  isCompleted ? "bg-foreground/40" : "bg-foreground/10",
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/85 px-6 backdrop-blur-sm">
+      <ul className="flex w-full max-w-xs flex-col gap-3.5">
+        {LOAD_STEPS.map((step, i) => {
+          const done = i < idx;
+          const active = i === idx;
+          return (
+            <li key={step.key} className="flex items-center gap-3">
+              <span className="flex size-5 shrink-0 items-center justify-center">
+                {done ? (
+                  <Check className="size-4 text-emerald-400" />
+                ) : active ? (
+                  <Loader className="size-4 animate-spin text-foreground/80" />
+                ) : (
+                  <span className="size-1.5 rounded-full bg-muted-foreground/30" />
                 )}
-              />
-            )}
-
-            <div
-              className={cn(
-                "absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-all duration-300",
-                isCompleted
-                  ? "bg-foreground text-background"
-                  : isActive
-                    ? "bg-foreground text-background ring-4 ring-foreground/10"
-                    : "bg-foreground/10 text-foreground/30",
-              )}
-            >
-              {isCompleted ? (
-                <Check className="h-4 w-4" strokeWidth={3} />
-              ) : isActive ? (
-                <Loader className="h-4 w-4 animate-spin" />
-              ) : (
-                index + 1
-              )}
-            </div>
-
-            <div className="flex flex-col pt-1.5">
+              </span>
               <span
-                className={cn(
-                  "text-sm font-semibold transition-colors duration-300",
-                  isActive
-                    ? "text-foreground"
-                    : isCompleted
-                      ? "text-foreground/70"
-                      : "text-foreground/30",
-                )}
+                className={`text-sm transition-colors ${
+                  done
+                    ? "text-muted-foreground"
+                    : active
+                      ? "text-foreground"
+                      : "text-muted-foreground/40"
+                }`}
               >
-                {step.title}
+                {step.label}
               </span>
-              <span className="text-xs text-muted-foreground mt-0.5">
-                {step.description}
-              </span>
-            </div>
-          </div>
-        );
-      })}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
