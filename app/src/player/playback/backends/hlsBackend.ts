@@ -52,7 +52,19 @@ export class HlsBackend implements PlaybackBackend {
       throw new Error("HLS is not supported in this browser");
     }
 
-    const hls = new Hls({ startPosition: startPositionSecs ?? -1 });
+    // TorBox transcodes on-demand; early segments return 408 while the encoder
+    // catches up. Give hls.js enough retries to ride out that warm-up window.
+    const hls = new Hls({
+      startPosition: startPositionSecs ?? -1,
+      fragLoadPolicy: {
+        default: {
+          maxTimeToFirstByteMs: 30_000,
+          maxLoadTimeMs: 60_000,
+          timeoutRetry: { maxNumRetry: 12, retryDelayMs: 1_000, maxRetryDelayMs: 8_000 },
+          errorRetry:   { maxNumRetry: 8,  retryDelayMs: 1_000, maxRetryDelayMs: 8_000 },
+        },
+      },
+    });
     this.hls = hls;
     hls.loadSource(url);
     hls.attachMedia(video);

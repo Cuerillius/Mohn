@@ -18,7 +18,7 @@ import SearchPage from "./pages/SearchPage";
 import MovieDetailPage from "./pages/MovieDetailPage";
 import SeriesDetailPage from "./pages/SeriesDetailPage";
 import LoginPage from "./pages/LoginPage";
-import PlayerPage from "./pages/PlayerPage";
+import Player from "./pages/player/Player";
 import ProfileSwitchPage from "./pages/ProfileSwitchPage";
 import SettingsPage from "./pages/SettingsPage";
 import { useSettings } from "./context/SettingsContext";
@@ -83,10 +83,10 @@ function AppRoutes() {
               <Route path="/movie/:id" element={<MovieDetailPage />} />
               <Route path="/tv/:id" element={<SeriesDetailPage />} />
             </Route>
-            <Route path="/play/:type/:id" element={<PlayerPage />} />
+            <Route path="/play/:type/:id" element={<Player />} />
             <Route
               path="/play/:type/:id/:season/:episode"
-              element={<PlayerPage />}
+              element={<Player />}
             />
           </Route>
         </Route>

@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Download,
+  ArrowLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +57,11 @@ export function TorboxKeySection({
   const [error, setError] = useState("");
   const [verified, setVerified] = useState(torboxKeySet);
 
-  const { data: plan = null, isLoading: fetchingPlan } = useQuery({
+  const {
+    data: plan = null,
+    isLoading: fetchingPlan,
+    isError: planError,
+  } = useQuery({
     queryKey: keys.torboxPlan(),
     queryFn: fetchTorboxPlan,
     enabled: torboxKeySet && verified,
@@ -121,7 +131,11 @@ export function TorboxKeySection({
               disabled={!keyDraft.trim() || verifying}
               onClick={handleVerify}
             >
-              {verifying ? <Loader2 className="size-4 animate-spin" /> : "Verify"}
+              {verifying ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                "Verify"
+              )}
             </Button>
           )}
         </div>
@@ -170,6 +184,68 @@ export function TorboxKeySection({
             Checking plan…
           </p>
         )}
+        {verified && !fetchingPlan && planError && (
+          <p className="flex items-center gap-1.5 text-sm text-destructive">
+            <AlertCircle className="size-3.5 shrink-0" />
+            API key is invalid or expired
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function TorboxUpgrade({
+  goBack,
+}: {
+  goBack: () => void | Promise<void>;
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+      <div className="flex w-full max-w-md flex-col gap-7 rounded-2xl border border-border bg-background p-8 shadow-2xl">
+        <div className="flex flex-col gap-1.5">
+          <div className="mb-1 flex items-center gap-3">
+            <img
+              src="/torbox.png"
+              alt="TorBox"
+              className="size-9 shrink-0 rounded-xl object-contain"
+            />
+            <h2 className="text-xl font-semibold tracking-tight">
+              Browser streaming needs Pro
+            </h2>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Streaming in the browser uses TorBox's HLS transcoding, which is a
+            Pro-only feature. Upgrade your plan, or use the desktop app to play
+            any source with no plan requirement.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Button
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+            onClick={() =>
+              window.open(
+                "https://www.torbox.app/subscription?referral=1255f72c-84de-4d54-bfb1-7860af4bb703",
+              )
+            }
+          >
+            Purchase TorBox
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              window.open("https://mohn.app", "_blank", "noreferrer")
+            }
+            className="w-full"
+          >
+            <Download className="size-4" />
+            Download the desktop app
+          </Button>
+          <Button variant="ghost" onClick={goBack} className="w-full">
+            <ArrowLeft className="size-4" />
+            Back
+          </Button>
+        </div>
       </div>
     </div>
   );
