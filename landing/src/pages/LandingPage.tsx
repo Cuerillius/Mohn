@@ -246,11 +246,11 @@ export default function LandingPage() {
             </Button>
             <Button
               size="lg"
-              className="rounded-full h-11 px-6 text-base"
+              className="rounded-full h-11 px-6 text-base transition-colors hover:bg-primary/90"
               onClick={openApp}
             >
               Launch web app
-              <ArrowRight className="ml-2 size-4" />
+              <ArrowRight className="ml-2 size-4 transition-transform group-hover/button:translate-x-0.5" />
             </Button>
             <a
               href={GITHUB}
@@ -269,7 +269,7 @@ export default function LandingPage() {
         id="top"
         className="relative overflow-hidden px-6 pb-0 pt-36 sm:pt-44"
       >
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 text-center sm:gap-12">
+        <div className="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-6 text-center sm:gap-12">
           {/* Badge */}
           <a
             href={GITHUB}
@@ -299,11 +299,11 @@ export default function LandingPage() {
           <div className="relative z-10 flex flex-wrap justify-center gap-4">
             <Button
               size="lg"
-              className="rounded-full h-14 px-8 text-lg shadow-lg"
+              className="rounded-full h-14 px-8 text-lg shadow-lg transition-colors hover:bg-primary/90"
               onClick={openApp}
             >
               Launch web app
-              <ArrowRight className="ml-2 size-5" />
+              <ArrowRight className="ml-2 size-5 transition-transform group-hover/button:translate-x-0.5" />
             </Button>
             <Button
               variant="outline"
@@ -320,14 +320,26 @@ export default function LandingPage() {
 
           {/* Mockup + glow */}
           <div className="relative mt-4 w-full pt-8">
-            {/* Glow behind the top of the mockup */}
+            {/* Red glow surrounding the app screenshot */}
             <div
-              className="pointer-events-none absolute inset-x-0 top-0 -z-0 mx-auto h-[420px] max-w-4xl rounded-full opacity-50 blur-[100px]"
-              style={{
-                background:
-                  "radial-gradient(closest-side, rgba(16,185,129,0.5), rgba(16,185,129,0) 80%)",
-              }}
-            />
+              aria-hidden
+              className="pointer-events-none absolute -inset-x-32 -top-32 -bottom-32 -z-0 mx-auto"
+            >
+              <div
+                className="absolute inset-0 opacity-90 blur-[120px]"
+                style={{
+                  background:
+                    "radial-gradient(58% 52% at 50% 50%, rgba(248,113,113,0.85), rgba(239,68,68,0.6) 38%, rgba(220,38,38,0.3) 60%, rgba(220,38,38,0) 75%)",
+                }}
+              />
+              <div
+                className="absolute inset-0 opacity-70 blur-[80px]"
+                style={{
+                  background:
+                    "radial-gradient(42% 38% at 50% 48%, rgba(252,165,165,0.65), rgba(239,68,68,0) 70%)",
+                }}
+              />
+            </div>
 
             {/* Mockup frame */}
             <div className="relative mx-auto max-w-5xl rounded-2xl border bg-card/70 p-1 shadow-2xl shadow-black/60 backdrop-blur">
@@ -497,11 +509,11 @@ export default function LandingPage() {
         <div className="mt-12 flex justify-center">
           <Button
             size="lg"
-            className="rounded-full h-14 px-8 text-lg shadow-lg"
+            className="rounded-full h-14 px-8 text-lg shadow-lg transition-colors hover:bg-primary/90"
             onClick={openApp}
           >
             Get started now
-            <ArrowRight className="ml-2 size-5" />
+            <ArrowRight className="ml-2 size-5 transition-transform group-hover/button:translate-x-0.5" />
           </Button>
         </div>
       </section>

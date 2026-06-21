@@ -98,14 +98,23 @@ interface TorrentFile {
 }
 interface ListResponse {
   success: boolean;
-  data: { files?: TorrentFile[]; download_state?: string } | Array<{ files?: TorrentFile[] }> | null;
+  data:
+    | { files?: TorrentFile[]; download_state?: string }
+    | Array<{ files?: TorrentFile[] }>
+    | null;
 }
 
 async function createTorrent(magnet: string): Promise<number> {
   const fd = new FormData();
   fd.append("magnet", magnet);
-  const res = await postForm<CreateTorrentResponse>("/torrents/createtorrent", fd);
-  if (!res.success && (res.detail === "ACTIVE_LIMIT" || res.error === "ACTIVE_LIMIT")) {
+  const res = await postForm<CreateTorrentResponse>(
+    "/torrents/createtorrent",
+    fd,
+  );
+  if (
+    !res.success &&
+    (res.detail === "ACTIVE_LIMIT" || res.error === "ACTIVE_LIMIT")
+  ) {
     throw new SlotsFullError();
   }
   if (!res.success || !res.data) {
@@ -114,8 +123,12 @@ async function createTorrent(magnet: string): Promise<number> {
   return res.data.torrent_id;
 }
 
-async function getTorrentFiles(torrentId: number): Promise<TorrentFile[] | undefined> {
-  const res = await get<ListResponse>(`/torrents/mylist?id=${torrentId}&bypass_cache=true`);
+async function getTorrentFiles(
+  torrentId: number,
+): Promise<TorrentFile[] | undefined> {
+  const res = await get<ListResponse>(
+    `/torrents/mylist?id=${torrentId}&bypass_cache=true`,
+  );
   const item = Array.isArray(res.data) ? res.data[0] : res.data;
   return item?.files;
 }
@@ -145,7 +158,8 @@ interface FileLike {
   mimetype?: string;
 }
 
-const VIDEO_EXT = /\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|ts|m2ts|3gp|ogv)$/i;
+const VIDEO_EXT =
+  /\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|mpg|mpeg|ts|m2ts|3gp|ogv)$/i;
 
 function basename(p: string): string {
   return (p.split(/[\\/]/).pop() ?? p).trim().toLowerCase();
@@ -323,28 +337,6 @@ export const RESOLUTION_INDEX: Record<string, number | null> = {
   "144p": 0,
 };
 
-// ── TESTING: hardcoded createStream result (set to null to disable). ──────────
-const HARDCODED_STREAM: StreamResult | null = {
-  hlsUrl:
-    "https://flux-003.wnam.tb-cdn.io/stream/4f803897-181b-4056-98b9-5d074a593aeb/null/null/0/playlist.m3u8?token=bae9bc32-38e6-458d-bf03-601a3743a30c&scrobbling_enabled=True",
-  presignedToken: "4f803897-181b-4056-98b9-5d074a593aeb",
-  userToken: "bae9bc32-38e6-458d-bf03-601a3743a30c",
-  mimetype: "video/mp4",
-  needsTranscoding: true,
-  isTranscoding: false,
-  audios: [
-    {
-      index: 1,
-      codec: "aac",
-      default: true,
-      language: "eng",
-      language_full: "English",
-      title: undefined,
-    },
-  ],
-  subtitles: [],
-};
-
 /**
  * Create (or re-create with new selections) a web HLS stream for a torrent file.
  * Re-call with different indexes to switch audio/subtitle/resolution.
@@ -354,10 +346,6 @@ export async function createStream(
   fileId: number,
   sel: StreamSelection = {},
 ): Promise<StreamResult> {
-  // ── TESTING: hardcoded response to avoid hammering the TorBox API. ──────────
-  // Remove this block to restore the real /stream/createstream call.
-  if (HARDCODED_STREAM) return HARDCODED_STREAM;
-
   const params = new URLSearchParams({
     id: String(torrentId),
     file_id: String(fileId),
@@ -372,7 +360,10 @@ export async function createStream(
   if (sel.resolutionIndex != null) {
     params.set("chosen_resolution_index", String(sel.resolutionIndex));
   }
-
+  console.log(
+    "Requesting stream with params",
+    `/stream/createstream?${params}`,
+  );
   const res = await get<CreateStreamResponse>(`/stream/createstream?${params}`);
   if (!res.success || !res.data) {
     throw new Error(res.error ?? res.detail ?? "Failed to create stream");

@@ -56,6 +56,11 @@ export default function Navbar() {
     if (location.pathname === "/search") navigate("/");
   }, [location.pathname, navigate]);
 
+  const routeHome = () => {
+    closeSearch();
+    navigate("/");
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
   };
@@ -72,7 +77,7 @@ export default function Navbar() {
     <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-100 bg-background border rounded-full flex items-center p-2">
       <button
         className="ml-1 flex items-center gap-1"
-        onClick={closeSearch}
+        onClick={routeHome}
         aria-label="Home"
       >
         <img src="/mohn.svg" alt="Mohn" className="size-10" />

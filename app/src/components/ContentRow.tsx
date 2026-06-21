@@ -15,7 +15,7 @@ interface Props {
   itemExtras?: Map<string, ItemExtra>;
 }
 
-const GAP = 10;
+const GAP = 18;
 const POSTER_MIN_W = 130;
 const MAX_PAGE = 10;
 
@@ -119,7 +119,7 @@ export default function ContentRow({ title, items, itemExtras }: Props) {
         >
           <ChevronLeft />
         </button>
-        <div className="overflow-hidden flex-1" ref={clipRef}>
+        <div className="overflow-hidden flex-1 py-5" ref={clipRef}>
           <div
             className="flex"
             style={{ transition: "transform 0.3s ease" }}

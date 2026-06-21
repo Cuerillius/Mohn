@@ -27,31 +27,41 @@ interface Genre {
   id: number;
   name: string;
   Icon: LucideIcon;
+  color: string;
 }
 
 const GENRES: Genre[] = [
-  { id: 28, name: "Action", Icon: Zap },
-  { id: 12, name: "Adventure", Icon: Compass },
-  { id: 16, name: "Animation", Icon: Palette },
-  { id: 35, name: "Comedy", Icon: Laugh },
-  { id: 80, name: "Crime", Icon: Shield },
-  { id: 99, name: "Documentary", Icon: Video },
-  { id: 18, name: "Drama", Icon: Mic },
-  { id: 14, name: "Fantasy", Icon: Sparkles },
-  { id: 27, name: "Horror", Icon: Skull },
-  { id: 9648, name: "Mystery", Icon: View },
-  { id: 10749, name: "Romance", Icon: Heart },
-  { id: 878, name: "Sci-Fi", Icon: Rocket },
-  { id: 53, name: "Thriller", Icon: Eye },
-  { id: 10752, name: "War", Icon: Swords },
-  { id: 37, name: "Western", Icon: Sun },
+  { id: 28, name: "Action", Icon: Zap, color: "#ef4444" },
+  { id: 12, name: "Adventure", Icon: Compass, color: "#f59e0b" },
+  { id: 16, name: "Animation", Icon: Palette, color: "#ec4899" },
+  { id: 35, name: "Comedy", Icon: Laugh, color: "#eab308" },
+  { id: 80, name: "Crime", Icon: Shield, color: "#64748b" },
+  { id: 99, name: "Documentary", Icon: Video, color: "#14b8a6" },
+  { id: 18, name: "Drama", Icon: Mic, color: "#8b5cf6" },
+  { id: 14, name: "Fantasy", Icon: Sparkles, color: "#a855f7" },
+  { id: 27, name: "Horror", Icon: Skull, color: "#b91c1c" },
+  { id: 9648, name: "Mystery", Icon: View, color: "#6366f1" },
+  { id: 10749, name: "Romance", Icon: Heart, color: "#f43f5e" },
+  { id: 878, name: "Sci-Fi", Icon: Rocket, color: "#06b6d4" },
+  { id: 53, name: "Thriller", Icon: Eye, color: "#f97316" },
+  { id: 10752, name: "War", Icon: Swords, color: "#78716c" },
+  { id: 37, name: "Western", Icon: Sun, color: "#d97706" },
 ];
 
 export { GENRES };
 
-const GAP = 10;
+const GAP = 18;
 const POSTER_MIN_W = 130;
 const MAX_PAGE = 10;
+
+/** Pick readable text color (black/white) for a given hex background. */
+function textOn(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6 ? "#0a0a0a" : "#ffffff";
+}
 
 function computePage(clipW: number): number {
   const page = Math.floor((clipW + GAP) / (POSTER_MIN_W + GAP));
@@ -68,15 +78,6 @@ export default function GenreChips() {
   const pageIdxRef = useRef(0);
   const [btnState, setBtnState] = useState({ left: false, right: true });
   const applySizeRef = useRef<() => void>(() => undefined);
-
-  const chipClipRef = useRef<HTMLDivElement>(null);
-  const chipTrackRef = useRef<HTMLDivElement>(null);
-  const chipPageRef = useRef(0);
-  const [chipBtnState, setChipBtnState] = useState({
-    left: false,
-    right: true,
-  });
-  const applyChipSizeRef = useRef<() => void>(() => undefined);
 
   applySizeRef.current = () => {
     const clip = clipRef.current;
@@ -117,50 +118,6 @@ export default function GenreChips() {
     setBtnState({ left: idx > 0, right: rawOffset < maxOffset });
   };
 
-  applyChipSizeRef.current = () => {
-    const clip = chipClipRef.current;
-    const track = chipTrackRef.current;
-    if (!clip || !track) return;
-    const clipW = clip.clientWidth || window.innerWidth - 80;
-    const chips = Array.from(
-      track.querySelectorAll<HTMLElement>(".genre-chip"),
-    );
-    if (!chips.length) return;
-
-    // measure how many chips fit
-    let usedW = 0;
-    let perPage = 0;
-    for (const chip of chips) {
-      const w = chip.offsetWidth || 80;
-      if (usedW + w + (perPage > 0 ? GAP : 0) > clipW) break;
-      usedW += w + (perPage > 0 ? GAP : 0);
-      perPage++;
-    }
-    perPage = Math.max(1, perPage);
-
-    const maxPage = Math.max(0, Math.ceil(GENRES.length / perPage) - 1);
-    chipPageRef.current = Math.min(chipPageRef.current, maxPage);
-    const idx = chipPageRef.current;
-
-    // compute pixel offset: sum widths of first idx*perPage chips + gaps
-    let offset = 0;
-    const start = idx * perPage;
-    for (let i = 0; i < start && i < chips.length; i++) {
-      offset += (chips[i].offsetWidth || 80) + GAP;
-    }
-
-    track.style.gap = GAP + "px";
-    track.style.transform = `translateX(-${offset}px)`;
-
-    const lastPageStart = maxPage * perPage;
-    let lastPageW = 0;
-    for (let i = lastPageStart; i < chips.length; i++) {
-      lastPageW += (chips[i].offsetWidth || 80) + (i > lastPageStart ? GAP : 0);
-    }
-
-    setChipBtnState({ left: idx > 0, right: idx < maxPage });
-  };
-
   useEffect(() => {
     const clip = clipRef.current;
     if (!clip) return;
@@ -172,19 +129,6 @@ export default function GenreChips() {
   useEffect(() => {
     applySizeRef.current();
   }, [items.length]);
-
-  useEffect(() => {
-    const clip = chipClipRef.current;
-    if (!clip) return;
-    const ro = new ResizeObserver(() => applyChipSizeRef.current());
-    ro.observe(clip);
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    // re-measure after chips render
-    requestAnimationFrame(() => applyChipSizeRef.current());
-  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -216,104 +160,154 @@ export default function GenreChips() {
     }
   };
 
-  const goChipLeft = () => {
-    if (chipPageRef.current > 0) {
-      chipPageRef.current--;
-      applyChipSizeRef.current();
-    }
+  // --- genre pill scroller ---
+  const chipScrollRef = useRef<HTMLDivElement>(null);
+  const [chipBtn, setChipBtn] = useState({ left: false, right: true });
+
+  const updateChipBtn = () => {
+    const el = chipScrollRef.current;
+    if (!el) return;
+    setChipBtn({
+      left: el.scrollLeft > 2,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2,
+    });
   };
 
-  const goChipRight = () => {
-    chipPageRef.current++;
-    applyChipSizeRef.current();
+  useEffect(() => {
+    updateChipBtn();
+    const el = chipScrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(updateChipBtn);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const scrollChips = (dir: 1 | -1) => {
+    const el = chipScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
   };
+
+  const { name, Icon, color } = activeGenre;
 
   return (
-    <div className="mb-7">
-      <div className="flex items-center px-12 mb-3">
-        <span className="text-sm font-medium text-white/50 flex-1">
-          Browse by Genre
-        </span>
-      </div>
-      <div className="flex items-center mb-3">
-        <button
-          className={`w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 h-9 ${chipBtnState.left ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
-          disabled={!chipBtnState.left}
-          onClick={goChipLeft}
-          aria-label="Previous genres"
-        >
-          <ChevronLeft />
-        </button>
-        <div className="overflow-hidden flex-1" ref={chipClipRef}>
-          <div
-            className="flex"
-            style={{ transition: "transform 0.3s ease" }}
-            ref={chipTrackRef}
-          >
-            {GENRES.map((genre) => {
-              const { id, name, Icon } = genre;
-              const active = id === activeGenre.id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActiveGenre(genre)}
-                  className={`genre-chip flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-md border transition-all text-sm ${
-                    active
-                      ? "border-white/30 bg-white/10 text-white shadow-sm"
-                      : "border-white/10 bg-transparent text-white/50 hover:border-white/20 hover:text-white/80"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {name}
-                </button>
-              );
-            })}
+    <div className="relative mb-7 px-12">
+      {/* One unified genre card: header + selector + poster row */}
+      <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/[0.03] px-4 pt-4 pb-2">
+        {/* color wash + oversized ghost icon */}
+        <div
+          className="pointer-events-none absolute inset-0 transition-[background] duration-500"
+          style={{
+            background: `linear-gradient(115deg, ${color}40 0%, ${color}12 40%, transparent 72%)`,
+          }}
+        />
+        <Icon
+          className="pointer-events-none absolute -right-6 -top-8 h-48 w-48 opacity-[0.06] transition-colors duration-500"
+          style={{ color }}
+        />
+
+        <div className="relative">
+          {/* pl-9 lines the header up with the pill/poster content (after the w-9 arrow gutter) */}
+          <div className="pl-9 pr-4">
+            <div className="text-xs font-medium text-white/45">
+              Browse by Genre
+            </div>
+            <div className="truncate text-xl font-bold text-white">{name}</div>
+          </div>
+
+          {/* sleeker selector with its own scroll arrows */}
+          <div className="mt-3 flex items-center">
+            <button
+              className={`w-9 h-9 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${chipBtn.left ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
+              disabled={!chipBtn.left}
+              onClick={() => scrollChips(-1)}
+              aria-label="Previous genres"
+            >
+              <ChevronLeft />
+            </button>
+            <div
+              ref={chipScrollRef}
+              onScroll={updateChipBtn}
+              className="flex flex-1 gap-2 overflow-x-auto scrollbar-none py-1"
+            >
+              {GENRES.map((genre) => {
+                const active = genre.id === activeGenre.id;
+                const GenreIcon = genre.Icon;
+                return (
+                  <button
+                    key={genre.id}
+                    onClick={() => setActiveGenre(genre)}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-lg border border-white/20 px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      active
+                        ? "shadow-sm"
+                        : "bg-white/5 text-white/55 hover:bg-white/10 hover:text-white/90"
+                    }`}
+                    style={
+                      active
+                        ? {
+                            background: genre.color,
+                            color: textOn(genre.color),
+                          }
+                        : undefined
+                    }
+                  >
+                    <GenreIcon className="h-3.5 w-3.5" />
+                    {genre.name}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              className={`w-9 h-9 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${chipBtn.right ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
+              disabled={!chipBtn.right}
+              onClick={() => scrollChips(1)}
+              aria-label="Next genres"
+            >
+              <ChevronRight />
+            </button>
+          </div>
+
+          {/* Poster row — part of the same card */}
+          <div className="mt-2 flex items-center">
+            <button
+              className={`row-arrow w-9 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.left ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
+              disabled={!btnState.left}
+              onClick={goLeft}
+              aria-label="Previous"
+            >
+              <ChevronLeft />
+            </button>
+            <div className="overflow-hidden flex-1 py-4" ref={clipRef}>
+              <div
+                className="flex"
+                style={{ transition: "transform 0.3s ease" }}
+                ref={trackRef}
+              >
+                {!loading && items.length > 0
+                  ? items.map((item) => (
+                      <Poster
+                        key={`${item.media_type}:${item.id}`}
+                        item={item}
+                      />
+                    ))
+                  : Array.from({ length: MAX_PAGE }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="poster-skeleton shrink-0 rounded-lg"
+                      />
+                    ))}
+              </div>
+            </div>
+            <button
+              className={`row-arrow w-9 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.right ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
+              disabled={!btnState.right}
+              onClick={goRight}
+              aria-label="Next"
+            >
+              <ChevronRight />
+            </button>
           </div>
         </div>
-        <button
-          className={`w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 h-9 ${chipBtnState.right ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
-          disabled={!chipBtnState.right}
-          onClick={goChipRight}
-          aria-label="Next genres"
-        >
-          <ChevronRight />
-        </button>
-      </div>
-      <div className="flex items-center">
-        <button
-          className={`row-arrow w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.left ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
-          disabled={!btnState.left}
-          onClick={goLeft}
-          aria-label="Previous"
-        >
-          <ChevronLeft />
-        </button>
-        <div className="overflow-hidden flex-1" ref={clipRef}>
-          <div
-            className="flex"
-            style={{ transition: "transform 0.3s ease" }}
-            ref={trackRef}
-          >
-            {!loading && items.length > 0
-              ? items.map((item) => (
-                  <Poster key={`${item.media_type}:${item.id}`} item={item} />
-                ))
-              : Array.from({ length: MAX_PAGE }).map((_, i) => (
-                  <Skeleton
-                    key={i}
-                    className="poster-skeleton shrink-0 rounded-lg"
-                  />
-                ))}
-          </div>
-        </div>
-        <button
-          className={`row-arrow w-10 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${btnState.right ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
-          disabled={!btnState.right}
-          onClick={goRight}
-          aria-label="Next"
-        >
-          <ChevronRight />
-        </button>
       </div>
     </div>
   );
