@@ -4,10 +4,15 @@ import { fetchAddonSources } from "../addons";
 import { checkCached, chooseFile } from "../torbox";
 import type { Source } from "../types";
 
+/** Progress through the feed stages, mapped onto the loading overlay's steps. */
+export type FeedStep = "lookup" | "search" | "cache";
+
 export interface SourceFeed {
   sources: Source[];
   /** True until the IMDB id is resolved, every addon has returned, and the cache check is done. */
   loading: boolean;
+  /** Which stage the feed is currently in (drives the loading overlay). */
+  step: FeedStep;
   /** Set only when the feed cannot produce anything (no addons, no imdb id). */
   error: string | null;
 }
@@ -38,6 +43,7 @@ export function useSourceFeed({
 }: Params): SourceFeed {
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState<FeedStep>("lookup");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,6 +53,7 @@ export function useSourceFeed({
     setSources([]);
     setError(null);
     setLoading(true);
+    setStep("lookup");
 
     async function run() {
       try {
@@ -60,6 +67,7 @@ export function useSourceFeed({
           throw new Error("No active addons. Enable at least one in Settings.");
         }
 
+        setStep("search");
         const streamId =
           type === "tv" ? `${imdb_id}:${season ?? 1}:${episode ?? 1}` : imdb_id;
         const addonType = type === "tv" ? "series" : "movie";
@@ -84,6 +92,7 @@ export function useSourceFeed({
         }
 
         // Single cache check for all hashes; fill cached + per-file size.
+        setStep("cache");
         const cache = await checkCached(list.map((s) => s.infoHash)).catch(
           () => ({}) as Awaited<ReturnType<typeof checkCached>>,
         );
@@ -118,5 +127,5 @@ export function useSourceFeed({
     };
   }, [enabled, tmdbId, type, season, episode, activeAddonUrls.join(",")]);
 
-  return { sources, loading, error };
+  return { sources, loading, step, error };
 }
