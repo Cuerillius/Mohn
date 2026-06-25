@@ -12,7 +12,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ProfileProvider, useProfile } from "./context/ProfileContext";
 import { SettingsProvider } from "./context/SettingsContext";
 import Navbar from "./components/Navbar";
-import ConfigWarningBanner from "./components/ConfigWarningBanner";
+import AppBanner from "./components/AppBanner";
 import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
 import MovieDetailPage from "./pages/MovieDetailPage";
@@ -30,7 +30,7 @@ function WithNavbar() {
   return (
     <>
       <Navbar />
-      <ConfigWarningBanner />
+      <AppBanner />
       <Outlet />
     </>
   );

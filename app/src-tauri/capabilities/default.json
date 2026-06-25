@@ -9,6 +9,8 @@
     "core:webview:allow-create-webview-window",
     "core:window:allow-close",
     "opener:default",
+    "updater:default",
+    "process:default",
     "libmpv:default",
     "oauth:allow-start",
     "oauth:allow-cancel"
