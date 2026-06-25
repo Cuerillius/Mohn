@@ -1,7 +1,9 @@
+import Footer from "@/components/Footer";
+
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background text-white">
-      <div className="max-w-3xl mx-auto px-6 py-16 space-y-10">
+    <div className="min-h-screen bg-background text-white flex flex-col">
+      <div className="max-w-3xl w-full mx-auto px-6 py-16 space-y-10 flex-1">
         <div>
           <h1 className="text-3xl font-bold mb-1">Privacy Policy</h1>
           <p className="text-zinc-400 text-sm">Last updated: June 17, 2026</p>
@@ -154,6 +156,7 @@ export default function PrivacyPage() {
           </p>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

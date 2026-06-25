@@ -40,12 +40,8 @@ export default function SearchPage() {
 
   return (
     <div className="pt-20 px-12 pb-10 max-[900px]:px-5">
-      <div className="text-[13px] text-[#555] mb-5">
-        {!displayQ
-          ? "Type to search"
-          : isFetching
-            ? "Searching…"
-            : `${results.length} result${results.length !== 1 ? "s" : ""} for "${displayQ}"`}
+      <div className="text-[13px] text-[#555] mb-5 text-center">
+        {!displayQ ? "Type to search" : isFetching ? "Searching…" : null}
       </div>
       <div className="flex flex-wrap gap-[10px]">
         {results.map((item) => (
@@ -58,7 +54,22 @@ export default function SearchPage() {
         ))}
       </div>
       {displayQ && !isFetching && results.length === 0 && (
-        <div className="text-[14px] text-[#555] mt-10">No results found</div>
+        <div className="flex flex-col items-center justify-center mt-20 text-center">
+          <img
+            src="/bare-poppy-center.jpg"
+            alt="No results"
+            className="w-40 h-auto mb-5 opacity-20"
+          />
+          <h2 className="text-[20px] font-semibold mb-2">
+            No results found
+          </h2>
+          <div className="text-[14px] text-white/40">
+            Nothing matches "{displayQ}".
+          </div>
+          <div className="text-[14px] text-white/40 mt-1">
+            Try a different search or check the spelling.
+          </div>
+        </div>
       )}
     </div>
   );

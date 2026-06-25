@@ -29,10 +29,17 @@
       "desktop": {
         "schemes": ["mohn"]
       }
+    },
+    "updater": {
+      "endpoints": [
+        "https://github.com/Cuerillius/Mohn/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQwOThCODVFNjZBRDU4RUEKUldUcVdLMW1YcmlZMEZBWDFHU3NRM0lvck5JeHo3UFlNUDNtS3lpOFpaVDJSQml6ZDRLbEUrMlIK"
     }
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "nsis",
     "publisher": "Cuerillius",
     "homepage": "https://mohn.app",
