@@ -12,7 +12,7 @@ A modern, open-source streaming client built for debrid streaming. Browse, disco
  
 ---
  
-<img src="app/public/hero.png" alt="Homepage" />
+<img src="landing/public/hero.webp" alt="Homepage" />
  
  
 ## Features
