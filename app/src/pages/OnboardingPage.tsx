@@ -22,14 +22,14 @@ export default function OnboardingPage() {
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center gap-8 px-4 py-12 overflow-hidden">
       <img
-        src="/bare-poppy-left.jpg"
+        src="/bare-poppy-left.webp"
         alt=""
         aria-hidden="true"
         className="pointer-events-none absolute left-0 bottom-0 h-1/2 w-64 object-cover object-right opacity-15"
         style={{ maskImage: "linear-gradient(to right, black 50%, transparent 100%), linear-gradient(to top, black 65%, transparent 100%)", maskComposite: "intersect" }}
       />
       <img
-        src="/bare-poppy-right.jpg"
+        src="/bare-poppy-right.webp"
         alt=""
         aria-hidden="true"
         className="pointer-events-none absolute right-0 bottom-0 h-3/4 w-124 object-cover object-left opacity-15"
