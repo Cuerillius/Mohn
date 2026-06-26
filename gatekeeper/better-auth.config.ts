@@ -8,7 +8,7 @@ const {
   HYPERDRIVE_CONNECTION_STRING,
   VITE_GATEKEEPER_URL,
   BETTER_AUTH_SECRET,
-  VITE_APP_URL,
+  TRUSTED_ORIGINS,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
 } = process.env;
@@ -27,7 +27,7 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
   baseURL: VITE_GATEKEEPER_URL,
   secret: BETTER_AUTH_SECRET,
-  trustedOrigins: [...(VITE_APP_URL?.split(",") ?? [])],
+  trustedOrigins: [...(TRUSTED_ORIGINS?.split(",") ?? [])],
   emailAndPassword: {
     enabled: true,
   },

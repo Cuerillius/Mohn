@@ -14,7 +14,7 @@ const TAURI_ORIGINS = ["https://tauri.localhost", "tauri://localhost"];
 
 app.use("*", (c, next) => {
   const allowedOrigins = [
-    ...(c.env.VITE_APP_URL?.split(",") ?? []),
+    ...(c.env.TRUSTED_ORIGINS?.split(",") ?? []),
     ...TAURI_ORIGINS,
   ];
   return cors({

@@ -11,7 +11,7 @@ export const auth = (env: CloudflareBindings) => {
     appName: "Mohn Gatekeeper",
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: [
-      ...(env.VITE_APP_URL ? env.VITE_APP_URL.split(",") : []),
+      ...(env.TRUSTED_ORIGINS ? env.TRUSTED_ORIGINS.split(",") : []),
       // Required for Social sign-in flows to work in the Tauri WebView
       "https://tauri.localhost",
       "tauri://localhost",
