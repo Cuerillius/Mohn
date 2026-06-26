@@ -1,6 +1,6 @@
 [package]
 name = "mohn"
-version = "0.1.4"
+version = "0.1.5"
 description = "Mohn desktop app"
 authors = []
 edition = "2021"
