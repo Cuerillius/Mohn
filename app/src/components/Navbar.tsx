@@ -17,20 +17,18 @@ export default function Navbar() {
 
   const { profile, clearProfile } = useProfile();
   const inputRef = useRef<HTMLInputElement>(null);
+  const prevPathRef = useRef<string>(location.pathname === "/search" ? "/" : location.pathname);
 
   useEffect(() => {
     if (query === (searchParams.get("q") ?? "")) return;
 
     const timer = setTimeout(() => {
-      const isSearchContext =
-        location.pathname === "/" || location.pathname === "/search";
-
-      if (query.trim() && isSearchContext) {
+      if (query.trim()) {
         navigate(`/search?q=${encodeURIComponent(query.trim())}`, {
-          replace: true,
+          replace: location.pathname === "/search",
         });
       } else if (!query.trim() && location.pathname === "/search") {
-        navigate("/");
+        navigate(prevPathRef.current);
       }
     }, 300);
 
@@ -46,6 +44,9 @@ export default function Navbar() {
   }, [location.pathname]);
 
   const openSearch = () => {
+    if (location.pathname !== "/search") {
+      prevPathRef.current = location.pathname;
+    }
     setIsOpen(true);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
@@ -53,7 +54,7 @@ export default function Navbar() {
   const closeSearch = useCallback(() => {
     setIsOpen(false);
     setQuery("");
-    if (location.pathname === "/search") navigate("/");
+    if (location.pathname === "/search") navigate(prevPathRef.current);
   }, [location.pathname, navigate]);
 
   const routeHome = () => {

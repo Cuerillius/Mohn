@@ -19,7 +19,7 @@ export default function HomePage() {
   } = useHomeData();
 
   return (
-    <div className="scrollbar-none">
+    <div className="scrollbar-none relative">
       <Hero items={heroItems} />
       <div className="pt-2 pb-10">
         {continueItems.length > 0 && (
@@ -47,6 +47,7 @@ export default function HomePage() {
           <ContentRow title="Watch It Again" items={watchAgainItems} />
         )}
       </div>
+      <div className="fixed bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-background to-transparent pointer-events-none z-10" />
     </div>
   );
 }
