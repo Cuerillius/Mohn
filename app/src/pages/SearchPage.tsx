@@ -56,13 +56,11 @@ export default function SearchPage() {
       {displayQ && !isFetching && results.length === 0 && (
         <div className="flex flex-col items-center justify-center mt-20 text-center">
           <img
-            src="/bare-poppy-center.jpg"
+            src="/bare-poppy-center.webp"
             alt="No results"
-            className="w-40 h-auto mb-5 opacity-20"
+            className="w-40 h-auto mb-5 opacity-40"
           />
-          <h2 className="text-[20px] font-semibold mb-2">
-            No results found
-          </h2>
+          <h2 className="text-[20px] font-semibold mb-2">No results found</h2>
           <div className="text-[14px] text-white/40">
             Nothing matches "{displayQ}".
           </div>

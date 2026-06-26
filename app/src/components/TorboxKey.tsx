@@ -206,7 +206,7 @@ export function TorboxUpgrade({
         <div className="flex flex-col gap-1.5">
           <div className="mb-1 flex items-center gap-3">
             <img
-              src="/torbox.png"
+              src="/torbox.webp"
               alt="TorBox"
               className="size-9 shrink-0 rounded-xl object-contain"
             />

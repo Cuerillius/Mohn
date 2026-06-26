@@ -16,8 +16,6 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import Avatar from "@/components/Avatar";
-
 function FeatureCard({
   icon: Icon,
   title,
@@ -38,34 +36,6 @@ function FeatureCard({
       <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
         {desc}
       </p>
-    </div>
-  );
-}
-
-/** Profile picker mock */
-function ProfileMock() {
-  const profiles = ["Anna", "Koby", "Cole"];
-  return (
-    <div className="flex w-full flex-col items-center justify-center rounded-2xl bg-background py-10 gap-8">
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Who's watching?
-      </h1>
-      <div className="flex flex-wrap items-start justify-center gap-6">
-        {profiles.map((name) => (
-          <div
-            key={name}
-            className="group flex flex-col items-center gap-3 cursor-pointer outline-none"
-          >
-            <Avatar
-              name={name}
-              className="flex size-16 items-center justify-center rounded-xl text-xl transition-all duration-150 ring-2 ring-transparent group-hover:ring-foreground"
-            />
-            <span className="text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground">
-              {name}
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -172,7 +142,11 @@ export default function Features() {
       {/* ── Profiles spotlight ── */}
       <div className="glow-card mt-8 grid grid-cols-1 items-center gap-6 rounded-3xl border bg-card p-8 lg:grid-cols-2 lg:gap-12 lg:p-12">
         <div className="order-2 lg:order-1">
-          <ProfileMock />
+          <img
+            src="/profiles.webp"
+            alt="Profile picker screenshot"
+            className="w-full rounded-2xl border border-white/10"
+          />
         </div>
         <div className="order-1 lg:order-2">
           <div className="flex items-center gap-3">

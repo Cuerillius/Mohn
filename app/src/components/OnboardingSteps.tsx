@@ -13,7 +13,7 @@ export function StepTorBox({ onNext }: { onNext: () => void }) {
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-3 mb-1">
           <img
-            src="/torbox.png"
+            src="/torbox.webp"
             alt="TorBox"
             className="size-9 rounded-xl object-contain shrink-0"
           />
