@@ -54,14 +54,6 @@ const GAP = 18;
 const POSTER_MIN_W = 130;
 const MAX_PAGE = 10;
 
-/** Pick readable text color (black/white) for a given hex background. */
-function textOn(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.6 ? "#0a0a0a" : "#ffffff";
-}
 
 function computePage(clipW: number): number {
   const page = Math.floor((clipW + GAP) / (POSTER_MIN_W + GAP));
@@ -188,35 +180,19 @@ export default function GenreChips() {
     el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: "smooth" });
   };
 
-  const { name, Icon, color } = activeGenre;
 
   return (
-    <div className="relative mb-7 px-12">
-      {/* One unified genre card: header + selector + poster row */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/[0.03] px-4 pt-4 pb-2">
-        {/* color wash + oversized ghost icon */}
-        <div
-          className="pointer-events-none absolute inset-0 transition-[background] duration-500"
-          style={{
-            background: `linear-gradient(115deg, ${color}40 0%, ${color}12 40%, transparent 72%)`,
-          }}
-        />
-        <Icon
-          className="pointer-events-none absolute -right-6 -top-8 h-48 w-48 opacity-[0.06] transition-colors duration-500"
-          style={{ color }}
-        />
+    <div className="relative mb-7">
+      {/* heading aligned with ContentRow titles */}
+      <div className="flex items-center pl-10 mb-2">
+        <h2 className="text-xl font-bold text-white flex-1">Browse by Genre</h2>
+      </div>
 
-        <div className="relative">
-          {/* pl-9 lines the header up with the pill/poster content (after the w-9 arrow gutter) */}
-          <div className="pl-9 pr-4">
-            <div className="text-xs font-medium text-white/45">
-              Browse by Genre
-            </div>
-            <div className="truncate text-xl font-bold text-white">{name}</div>
-          </div>
-
+      {/* One unified genre card: selector + poster row */}
+      <div className="rounded-2xl border border-white/20 bg-white/[0.03] mx-10 px-4 pt-4 pb-2">
+        <div>
           {/* sleeker selector with its own scroll arrows */}
-          <div className="mt-3 flex items-center">
+          <div className="flex items-center">
             <button
               className={`w-9 h-9 shrink-0 bg-transparent border-none cursor-pointer flex items-center justify-center p-0 transition-colors duration-150 ${chipBtn.left ? "text-white/50 hover:text-white" : "text-white/50 opacity-20 cursor-default"}`}
               disabled={!chipBtn.left}
@@ -237,19 +213,11 @@ export default function GenreChips() {
                   <button
                     key={genre.id}
                     onClick={() => setActiveGenre(genre)}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-lg border border-white/20 px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                    className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                       active
-                        ? "shadow-sm"
-                        : "bg-white/5 text-white/55 hover:bg-white/10 hover:text-white/90"
+                        ? "bg-white/20 border-white/40 text-white"
+                        : "bg-white/5 border-white/20 text-white/55 hover:bg-white/10 hover:text-white/90"
                     }`}
-                    style={
-                      active
-                        ? {
-                            background: genre.color,
-                            color: textOn(genre.color),
-                          }
-                        : undefined
-                    }
                   >
                     <GenreIcon className="h-3.5 w-3.5" />
                     {genre.name}

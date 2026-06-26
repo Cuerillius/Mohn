@@ -266,7 +266,7 @@ export default function Player() {
   return (
     <div
       className={`relative h-screen w-full overflow-hidden ${
-        isTauriPlatform ? "bg-transparent" : "bg-black"
+        isTauriPlatform ? "bg-transparent" : "bg-background"
       }`}
       onMouseMove={resetTimer}
       onMouseLeave={hide}

@@ -13,7 +13,7 @@ const LOAD_STEPS: { key: LoadStep; label: string }[] = [
 export default function LoadingSteps({ current }: { current: LoadStep }) {
   const idx = LOAD_STEPS.findIndex((s) => s.key === current);
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/85 px-6 backdrop-blur-sm">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/85 px-6 backdrop-blur-sm">
       <ul className="flex w-full max-w-xs flex-col gap-3.5">
         {LOAD_STEPS.map((step, i) => {
           const done = i < idx;

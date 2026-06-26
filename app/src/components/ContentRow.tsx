@@ -104,10 +104,10 @@ export default function ContentRow({ title, items, itemExtras }: Props) {
   return (
     <div className="mb-7">
       {title && (
-        <div className="flex items-center px-12 mb-3">
-          <span className="text-sm font-medium text-white/50 flex-1">
+        <div className="flex items-center pl-10 mb-2">
+          <h2 className="text-xl font-bold text-white flex-1">
             {title}
-          </span>
+          </h2>
         </div>
       )}
       <div className="flex items-center">
